@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ember — Your path to financial independence</title>
+  <meta name="description" content="A modern FIRE calculator. Plan Lean, Regular, Chubby, Fat, Barista, and Coast FIRE side-by-side, compare scenarios, and stress-test with Monte Carlo." />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Inter font (closest free analog to SF Pro) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --ink: #1d1d1f;
+      --ink-soft: #424245;
+      --ink-mute: #6e6e73;
+      --line: #d2d2d7;
+      --line-soft: #e8e8ed;
+      --bg: #ffffff;
+      --bg-soft: #fbfbfd;
+      --bg-tint: #f5f5f7;
+      --brand: #0071e3;
+      --brand-dark: #0058b3;
+      --positive: #34c759;
+      --warn: #ff9f0a;
+      --danger: #ff3b30;
+    }
+
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: -0.011em;
+    }
+
+    /* Apple-style display headings */
+    .display-1 { font-size: clamp(2.5rem, 6vw, 5rem); line-height: 1.05; letter-spacing: -0.04em; font-weight: 700; }
+    .display-2 { font-size: clamp(2rem, 4.5vw, 3.5rem); line-height: 1.07; letter-spacing: -0.035em; font-weight: 700; }
+    .display-3 { font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.1; letter-spacing: -0.025em; font-weight: 600; }
+
+    /* Translucent nav */
+    .nav-blur {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    /* Subtle card */
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--line-soft);
+      border-radius: 20px;
+      transition: box-shadow .25s ease, transform .25s ease;
+    }
+    .card-soft {
+      background: var(--bg-tint);
+      border-radius: 20px;
+    }
+    .card-hover:hover { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0.7rem 1.4rem; border-radius: 980px;
+      font-weight: 500; font-size: 0.95rem;
+      transition: all .2s ease;
+      cursor: pointer; user-select: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--brand); color: white; }
+    .btn-primary:hover { background: var(--brand-dark); }
+    .btn-ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+    .btn-ghost:hover { background: rgba(0,113,227,0.05); }
+    .btn-dark { background: var(--ink); color: white; }
+    .btn-dark:hover { background: #000; }
+    .btn-light { background: var(--bg-tint); color: var(--ink); }
+    .btn-light:hover { background: var(--line-soft); }
+    .btn-link { background: transparent; color: var(--brand); padding: 0.5rem 0.75rem; }
+    .btn-link:hover { text-decoration: underline; }
+
+    /* Inputs */
+    .input-label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--ink-soft); margin-bottom: 0.4rem; }
+    .input-help { font-size: 0.75rem; color: var(--ink-mute); margin-top: 0.3rem; }
+    .input,
+    select.input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.7rem 0.9rem;
+      font-size: 1rem;
+      color: var(--ink);
+      transition: border-color .15s ease, box-shadow .15s ease;
+      font-family: inherit;
+    }
+    .input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(0,113,227,0.18); }
+    .input-prefix {
+      position: relative;
+    }
+    .input-prefix::before {
+      content: attr(data-prefix);
+      position: absolute;
+      left: 0.9rem; top: 50%; transform: translateY(-50%);
+      color: var(--ink-mute);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .input-prefix .input { padding-left: 1.7rem; }
+
+    /* Pills */
+    .pill {
+      display: inline-flex; align-items: center;
+      padding: 0.25rem 0.7rem; border-radius: 980px;
+      font-size: 0.78rem; font-weight: 500;
+      background: var(--bg-tint); color: var(--ink-soft);
+    }
+    .pill-brand { background: rgba(0,113,227,0.1); color: var(--brand); }
+    .pill-positive { background: rgba(52,199,89,0.12); color: #1f7a3a; }
+    .pill-warn { background: rgba(255,159,10,0.14); color: #a25800; }
+    .pill-danger { background: rgba(255,59,48,0.12); color: #b3231a; }
+
+    /* Section padding */
+    .section { padding: 5rem 1.5rem; }
+    @media (min-width: 768px) { .section { padding: 7rem 2rem; } }
+
+    .container-app { max-width: 1180px; margin: 0 auto; }
+    .container-narrow { max-width: 880px; margin: 0 auto; }
+
+    /* Hide number spinners (cleaner Apple look) */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    /* Color swatches for scenarios */
+    .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+    /* Animated underline link */
+    .link-arrow { color: var(--brand); display: inline-flex; align-items: center; gap: 0.3rem; }
+    .link-arrow:hover { text-decoration: underline; }
+
+    /* Variant cards */
+    .variant-card { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .variant-card.is-match { border-color: var(--brand); box-shadow: 0 10px 40px -10px rgba(0,113,227,0.25); }
+
+    /* Hero gradient text accent */
+    .gradient-text {
+      background: linear-gradient(135deg, #0071e3 0%, #6e44ff 50%, #ff2d92 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Mobile nav menu */
+    .mobile-menu { display: none; }
+    .mobile-menu.open { display: block; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120%);
+      background: var(--ink); color: white;
+      padding: 0.9rem 1.4rem; border-radius: 980px;
+      font-size: 0.9rem; font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform .35s ease;
+      z-index: 100;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Scrollbar polish */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ink-mute); }
+
+    /* Table polish */
+    table.compare { width: 100%; border-collapse: separate; border-spacing: 0; }
+    table.compare th, table.compare td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--line-soft); font-size: 0.92rem; }
+    table.compare thead th { background: var(--bg-tint); font-weight: 500; color: var(--ink-soft); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    table.compare tr:last-child td { border-bottom: none; }
+    table.compare td.num, table.compare th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Range input polish */
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; background: var(--line); border-radius: 2px; outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--brand); cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,113,227,0.4);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--brand); cursor: pointer; border: none;
+      box-shadow: 0 2px 8px rgba(0,113,227,0.4);
+    }
+
+    /* Tabs */
+    .tab { padding: 0.6rem 1rem; font-weight: 500; color: var(--ink-mute); border-bottom: 2px solid transparent; cursor: pointer; transition: all .2s ease; }
+    .tab.active { color: var(--ink); border-bottom-color: var(--brand); }
+    .tab:hover:not(.active) { color: var(--ink-soft); }
+
+    /* Modal */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 90; display: none; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: white; border-radius: 20px; max-width: 520px; width: 100%; padding: 2rem; max-height: 90vh; overflow-y: auto; }
+
+    /* Print-style canvas wrapper */
+    .chart-wrap { position: relative; width: 100%; }
+
+    /* Fade-in on scroll */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity .8s ease, transform .8s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <nav class="nav-blur sticky top-0 z-50">
+    <div class="container-app flex items-center justify-between py-3 px-4">
+      <a href="#top" class="flex items-center gap-2">
+        <span class="text-2xl">🔥</span>
+        <span class="font-semibold text-lg">Ember</span>
+      </a>
+      <div class="hidden md:flex items-center gap-1 text-sm">
+        <a href="#plan" class="px-3 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)]">Plan</a>
+        <a href="#variants" class="px-3 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)]">FIRE Types</a>
+        <a href="#scenarios" class="px-3 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)]">Scenarios</a>
+        <a href="#barista" class="px-3 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)]">Barista</a>
+        <a href="#coast" class="px-3 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)]">Coast</a>
+        <a href="#stress" class="px-3 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)]">Stress Test</a>
+        <a href="#plan" class="btn btn-dark ml-2">Get Started</a>
+      </div>
+      <button id="mobileNavToggle" class="md:hidden p-2" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div id="mobileMenu" class="mobile-menu md:hidden border-t border-[var(--line-soft)]">
+      <div class="container-app px-4 py-3 flex flex-col gap-1">
+        <a href="#plan" class="py-2 text-[var(--ink-soft)]">Plan</a>
+        <a href="#variants" class="py-2 text-[var(--ink-soft)]">FIRE Types</a>
+        <a href="#scenarios" class="py-2 text-[var(--ink-soft)]">Scenarios</a>
+        <a href="#barista" class="py-2 text-[var(--ink-soft)]">Barista</a>
+        <a href="#coast" class="py-2 text-[var(--ink-soft)]">Coast</a>
+        <a href="#stress" class="py-2 text-[var(--ink-soft)]">Stress Test</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <section id="top" class="section pt-20 md:pt-24 pb-8 md:pb-12 text-center">
+    <div class="container-narrow">
+      <p class="pill pill-brand mx-auto mb-6">Financial Independence, Retire Early</p>
+      <h1 class="display-1 mb-6">
+        Your fastest path to <span class="gradient-text">financial freedom</span>.
+      </h1>
+      <p class="text-lg md:text-xl text-[var(--ink-soft)] max-w-2xl mx-auto mb-8" style="letter-spacing: -0.005em;">
+        Plan your retirement across every flavor of FIRE — Lean, Regular, Chubby, Fat, Barista, and Coast — and compare scenarios side-by-side on one chart.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <a href="#plan" class="btn btn-dark">Start your plan</a>
+        <a href="#variants" class="btn btn-light">Learn the FIRE types</a>
+      </div>
+      <p class="text-xs text-[var(--ink-mute)] mt-6">No signup. Your data stays in your browser.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLAN INPUTS ============ -->
+  <section id="plan" class="section pt-8 md:pt-12">
+    <div class="container-app">
+
+      <div class="text-center mb-10 md:mb-14">
+        <p class="pill mx-auto mb-3">Step 1</p>
+        <h2 class="display-2 mb-3">Tell us about your finances.</h2>
+        <p class="text-lg text-[var(--ink-soft)] max-w-2xl mx-auto">A few numbers is all we need. Everything is editable and nothing leaves your device.</p>
+      </div>
+
+      <div class="card p-6 md:p-10">
+
+        <!-- About you -->
+        <div class="mb-8">
+          <h3 class="display-3 mb-5">About you</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="input-label" for="currentAge">Current age</label>
+              <input id="currentAge" type="number" class="input" value="32" min="16" max="80" />
+            </div>
+            <div>
+              <label class="input-label" for="retirementAge">Target retirement age</label>
+              <input id="retirementAge" type="number" class="input" value="50" min="20" max="80" />
+            </div>
+            <div>
+              <label class="input-label" for="lifeExpectancy">Plan through age</label>
+              <input id="lifeExpectancy" type="number" class="input" value="95" min="65" max="105" />
+            </div>
+            <div>
+              <label class="input-label" for="household">Household</label>
+              <select id="household" class="input">
+                <option value="single">Single</option>
+                <option value="couple" selected>Couple</option>
+              </select>
+              <p class="input-help">Drives default tax bracket, ACA, and Social Security assumptions.</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-8 border-[var(--line-soft)]" />
+
+        <!-- Account balances -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+            <h3 class="display-3">Account balances today</h3>
+            <span id="portfolioTotalChip" class="pill pill-brand">Total: $0</span>
+          </div>
+          <p class="text-sm text-[var(--ink-soft)] mb-4">Splitting balances by tax treatment matters: tax-advantaged accounts grow faster but are locked until 59½ (with exceptions). Cash and taxable accounts are what you bridge with if you retire early.</p>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+              <label class="input-label" for="balCash">Cash</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="balCash" type="number" class="input" value="20000" min="0" step="1000" />
+              </div>
+              <p class="input-help">Checking, savings, HYSA, CDs</p>
+            </div>
+            <div>
+              <label class="input-label" for="balTaxable">Taxable</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="balTaxable" type="number" class="input" value="40000" min="0" step="1000" />
+              </div>
+              <p class="input-help">Brokerage account</p>
+            </div>
+            <div>
+              <label class="input-label" for="balTraditional">Tax-deferred</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="balTraditional" type="number" class="input" value="100000" min="0" step="1000" />
+              </div>
+              <p class="input-help">401k, traditional IRA</p>
+            </div>
+            <div>
+              <label class="input-label" for="balRoth">Roth</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="balRoth" type="number" class="input" value="20000" min="0" step="1000" />
+              </div>
+              <p class="input-help">Roth IRA, Roth 401k</p>
+            </div>
+            <div>
+              <label class="input-label" for="balHSA">HSA</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="balHSA" type="number" class="input" value="0" min="0" step="500" />
+              </div>
+              <p class="input-help">Triple-tax-advantaged</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-8 border-[var(--line-soft)]" />
+
+        <!-- Annual contributions per bucket -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+            <h3 class="display-3">Annual savings by account</h3>
+            <span id="contributionTotalChip" class="pill pill-brand">Total: $0 / yr</span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+              <label class="input-label" for="conCash">Cash</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="conCash" type="number" class="input" value="0" min="0" step="500" />
+              </div>
+            </div>
+            <div>
+              <label class="input-label" for="conTaxable">Taxable</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="conTaxable" type="number" class="input" value="10000" min="0" step="500" />
+              </div>
+            </div>
+            <div>
+              <label class="input-label" for="conTraditional">Tax-deferred</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="conTraditional" type="number" class="input" value="23000" min="0" step="500" />
+              </div>
+              <p class="input-help">+ employer match</p>
+            </div>
+            <div>
+              <label class="input-label" for="conRoth">Roth</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="conRoth" type="number" class="input" value="7000" min="0" step="500" />
+              </div>
+            </div>
+            <div>
+              <label class="input-label" for="conHSA">HSA</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="conHSA" type="number" class="input" value="2000" min="0" step="500" />
+              </div>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label class="input-label" for="contributionGrowth">Yearly savings increase</label>
+            <div class="flex items-center gap-3 max-w-xs">
+              <input id="contributionGrowth" type="range" min="0" max="10" step="0.5" value="3" />
+              <span id="contributionGrowthLabel" class="text-sm font-medium w-12 text-right">3.0%</span>
+            </div>
+            <p class="input-help">Applies to all contributions. Models raises, promotions, contribution bumps.</p>
+          </div>
+        </div>
+
+        <hr class="my-8 border-[var(--line-soft)]" />
+
+        <!-- Spending + assumptions -->
+        <div class="mb-2">
+          <h3 class="display-3 mb-5">Retirement spending</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="input-label" for="annualSpend">Annual take-home spend</label>
+              <div class="input-prefix" data-prefix="$">
+                <input id="annualSpend" type="number" class="input" value="80000" min="0" step="1000" />
+              </div>
+              <p class="input-help">After-tax lifestyle spend in today's dollars.</p>
+            </div>
+            <div>
+              <label class="input-label" for="retirementTaxRate">Effective tax rate in retirement</label>
+              <div class="flex items-center gap-3">
+                <input id="retirementTaxRate" type="range" min="0" max="35" step="0.5" value="10" />
+                <span id="retirementTaxRateLabel" class="text-sm font-medium w-14 text-right">10.0%</span>
+              </div>
+              <p class="input-help">App grosses up your spend so withdrawals cover taxes.</p>
+            </div>
+            <div>
+              <label class="input-label">Gross withdrawal need</label>
+              <p id="grossSpendDisplay" class="text-2xl font-semibold text-[var(--ink)] mt-1">$88,889</p>
+              <p class="input-help">= take-home ÷ (1 − tax rate). This is what your portfolio must support.</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-8 border-[var(--line-soft)]" />
+
+        <h3 class="display-3 mb-5">Market & inflation assumptions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div>
+            <label class="input-label" for="realReturn">Expected real return</label>
+            <div class="flex items-center gap-3">
+              <input id="realReturn" type="range" min="2" max="10" step="0.25" value="6" />
+              <span id="realReturnLabel" class="text-sm font-medium w-14 text-right">6.0%</span>
+            </div>
+            <p class="input-help">After inflation. 5–7% is typical for diversified portfolios.</p>
+          </div>
+          <div>
+            <label class="input-label" for="inflation">Inflation rate</label>
+            <div class="flex items-center gap-3">
+              <input id="inflation" type="range" min="1" max="6" step="0.1" value="3" />
+              <span id="inflationLabel" class="text-sm font-medium w-14 text-right">3.0%</span>
+            </div>
+            <p class="input-help">Used to show today's $ vs future $.</p>
+          </div>
+          <div>
+            <label class="input-label" for="volatility">Volatility (annual stdev)</label>
+            <div class="flex items-center gap-3">
+              <input id="volatility" type="range" min="5" max="25" step="0.5" value="15" />
+              <span id="volatilityLabel" class="text-sm font-medium w-14 text-right">15.0%</span>
+            </div>
+            <p class="input-help">Used for Monte Carlo stress tests.</p>
+          </div>
+          <div>
+            <label class="input-label" for="withdrawalRate">Withdrawal rate</label>
+            <div class="flex items-center gap-3">
+              <input id="withdrawalRate" type="range" min="2.5" max="5" step="0.1" value="4" />
+              <span id="withdrawalRateLabel" class="text-sm font-medium w-14 text-right">4.0%</span>
+            </div>
+            <p class="input-help">4% rule by default. 3.25–3.5% for longer horizons.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ CLASSIFICATION + VARIANTS ============ -->
+  <section id="variants" class="section pt-8 md:pt-12 bg-[var(--bg-soft)]">
+    <div class="container-app">
+      <div class="text-center mb-10 md:mb-14">
+        <p class="pill mx-auto mb-3">Step 2</p>
+        <h2 class="display-2 mb-3">You're a <span id="classificationName" class="gradient-text">Regular FIRE</span> planner.</h2>
+        <p id="classificationDesc" class="text-lg text-[var(--ink-soft)] max-w-2xl mx-auto">Based on your planned annual spending.</p>
+      </div>
+
+      <!-- Highlight numbers -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <div class="card p-6 text-center">
+          <p class="text-sm text-[var(--ink-mute)] mb-2">Your FIRE Number</p>
+          <p id="yourFireNumber" class="display-3 mb-1">$2,222,222</p>
+          <p class="text-xs text-[var(--ink-mute)]" id="yourFireNumberHelp">in today's dollars @ 4.0% withdrawal</p>
+        </div>
+        <div class="card p-6 text-center">
+          <p class="text-sm text-[var(--ink-mute)] mb-2">Years to FIRE</p>
+          <p id="yearsToFire" class="display-3 mb-1">18</p>
+          <p class="text-xs text-[var(--ink-mute)]" id="ageAtFire">at age 50</p>
+        </div>
+        <div class="card p-6 text-center">
+          <p class="text-sm text-[var(--ink-mute)] mb-2">On track?</p>
+          <p id="onTrackLabel" class="display-3 mb-1">On track</p>
+          <p class="text-xs text-[var(--ink-mute)]" id="onTrackHelp">vs. your retirement age goal</p>
+        </div>
+      </div>
+
+      <!-- Today vs Future dollars -->
+      <div class="card p-6 md:p-8 mb-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 class="font-semibold">Today's dollars vs. dollars at retirement</h3>
+          <span id="inflationChip" class="pill">Inflation: 3.0%/yr</span>
+        </div>
+        <p class="text-sm text-[var(--ink-soft)] mb-5">The calculator runs in today's dollars (inflation-adjusted), so you can plan in money you understand. Here's what those numbers look like in actual future dollars at your retirement age.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="card-soft p-5">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider mb-2">Annual take-home spend</p>
+            <p class="text-sm text-[var(--ink-soft)]">Today: <span id="spendTodayLbl" class="font-semibold text-[var(--ink)]">$80,000</span></p>
+            <p class="text-sm text-[var(--ink-soft)] mt-1">At retirement: <span id="spendFutureLbl" class="font-semibold text-[var(--ink)]">$144,290</span></p>
+          </div>
+          <div class="card-soft p-5">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider mb-2">Gross withdrawal need</p>
+            <p class="text-sm text-[var(--ink-soft)]">Today: <span id="grossTodayLbl" class="font-semibold text-[var(--ink)]">$88,889</span></p>
+            <p class="text-sm text-[var(--ink-soft)] mt-1">At retirement: <span id="grossFutureLbl" class="font-semibold text-[var(--ink)]">$160,322</span></p>
+          </div>
+          <div class="card-soft p-5">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider mb-2">FIRE Number</p>
+            <p class="text-sm text-[var(--ink-soft)]">Today: <span id="fireTodayLbl" class="font-semibold text-[var(--ink)]">$2.22M</span></p>
+            <p class="text-sm text-[var(--ink-soft)] mt-1">At retirement: <span id="fireFutureLbl" class="font-semibold text-[var(--ink)]">$4.01M</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bridge-age warning -->
+      <div id="bridgeCard" class="mb-10"></div>
+
+      <!-- Variant cards -->
+      <h3 class="display-3 mb-5 text-center">All four lifestyle variants</h3>
+      <p class="text-center text-[var(--ink-soft)] mb-8">Same inputs, four different lifestyles. Spend more, need more.</p>
+      <div id="variantsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"></div>
+
+      <p class="text-center text-sm text-[var(--ink-mute)] mt-8">Sub-Lean (under $25k) and beyond-Fat ranges are also computed — your FIRE Number is always shown above.</p>
+    </div>
+  </section>
+
+  <!-- ============ SCENARIOS (HERO FEATURE) ============ -->
+  <section id="scenarios" class="section pt-8 md:pt-12">
+    <div class="container-app">
+
+      <div class="text-center mb-10 md:mb-14">
+        <p class="pill pill-brand mx-auto mb-3">Hero Feature</p>
+        <h2 class="display-2 mb-3">Compare scenarios on one chart.</h2>
+        <p class="text-lg text-[var(--ink-soft)] max-w-2xl mx-auto">Save more. Move somewhere cheaper. Take a sabbatical. See exactly how each choice moves your FIRE date — all overlaid on the same axes.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Scenario list -->
+        <div class="lg:col-span-1">
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Your scenarios</h3>
+              <button id="addScenarioBtn" class="btn btn-link text-sm">+ Add</button>
+            </div>
+            <div id="scenarioList" class="flex flex-col gap-2"></div>
+            <p class="text-xs text-[var(--ink-mute)] mt-4">Toggle a scenario on/off to show or hide it on the chart.</p>
+          </div>
+        </div>
+
+        <!-- Chart + table -->
+        <div class="lg:col-span-2">
+          <div class="card p-5 md:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Net worth projection</h3>
+              <span class="text-xs text-[var(--ink-mute)]">Today's dollars</span>
+            </div>
+            <div class="chart-wrap" style="height: 380px;">
+              <canvas id="scenarioChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card p-5 md:p-6 mt-6">
+            <h3 class="font-semibold mb-4">Side-by-side outcomes</h3>
+            <div class="overflow-x-auto">
+              <table class="compare">
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th class="num">FIRE #</th>
+                    <th class="num">Years</th>
+                    <th class="num">FIRE Age</th>
+                    <th class="num">Coast #</th>
+                  </tr>
+                </thead>
+                <tbody id="scenarioTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ BARISTA FIRE ============ -->
+  <section id="barista" class="section pt-8 md:pt-12 bg-[var(--bg-soft)]">
+    <div class="container-app grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-14 items-center">
+      <div>
+        <p class="pill mb-4">Hybrid</p>
+        <h2 class="display-2 mb-4">Barista FIRE.</h2>
+        <p class="text-lg text-[var(--ink-soft)] mb-6">Build a smaller portfolio, then bridge the rest with part-time work — often for the healthcare benefits alone. Common at Starbucks, Costco, and UPS (benefits at 20–25 hrs/week).</p>
+        <div class="card-soft p-5">
+          <p class="text-sm text-[var(--ink-soft)] mb-3 font-medium">Formula</p>
+          <p class="font-mono text-sm">(Annual Spend − Part-Time Income) × 25</p>
+        </div>
+      </div>
+      <div class="card p-6 md:p-8">
+        <div class="mb-4">
+          <label class="input-label" for="partTimeIncome">Expected part-time income (after tax)</label>
+          <div class="input-prefix" data-prefix="$">
+            <input id="partTimeIncome" type="number" class="input" value="20000" min="0" step="500" />
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="input-label" for="healthcareSavings">Healthcare savings vs ACA</label>
+          <div class="input-prefix" data-prefix="$">
+            <input id="healthcareSavings" type="number" class="input" value="9000" min="0" step="500" />
+          </div>
+          <p class="input-help">Employer coverage typically saves $6k–$18k/yr for a household.</p>
+        </div>
+        <hr class="my-5 border-[var(--line-soft)]" />
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Barista FIRE #</p>
+            <p id="baristaNumber" class="text-2xl font-semibold mt-1">$500,000</p>
+          </div>
+          <div>
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">vs. Full FIRE</p>
+            <p id="baristaSavings" class="text-2xl font-semibold mt-1 text-[var(--positive)]">$1.5M less</p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Years to Barista FIRE</p>
+            <p id="baristaYears" class="text-2xl font-semibold mt-1">9 years</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COAST FIRE ============ -->
+  <section id="coast" class="section pt-8 md:pt-12">
+    <div class="container-app grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-14 items-center">
+      <div class="card p-6 md:p-8 order-2 lg:order-1">
+        <div class="mb-4">
+          <label class="input-label" for="coastRetirementAge">Traditional retirement age</label>
+          <input id="coastRetirementAge" type="number" class="input" value="65" min="40" max="80" />
+          <p class="input-help">When you'd stop working entirely. Coast FIRE doesn't require early retirement.</p>
+        </div>
+        <hr class="my-5 border-[var(--line-soft)]" />
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Coast FIRE #</p>
+            <p id="coastNumber" class="text-2xl font-semibold mt-1">$650,000</p>
+          </div>
+          <div>
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">vs. Full FIRE</p>
+            <p id="coastDiscount" class="text-2xl font-semibold mt-1 text-[var(--positive)]">68% less</p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Age you can coast</p>
+            <p id="coastAge" class="text-2xl font-semibold mt-1">39</p>
+            <p class="text-xs text-[var(--ink-mute)] mt-1" id="coastAgeHelp">If you keep saving at today's rate.</p>
+          </div>
+        </div>
+      </div>
+      <div class="order-1 lg:order-2">
+        <p class="pill mb-4">Compounding magic</p>
+        <h2 class="display-2 mb-4">Coast FIRE.</h2>
+        <p class="text-lg text-[var(--ink-soft)] mb-6">Save enough early that compound growth alone carries you to a full FIRE number by your traditional retirement age. After Coast, you can stop saving — though you still need to cover your living expenses.</p>
+        <div class="card-soft p-5">
+          <p class="text-sm text-[var(--ink-soft)] mb-3 font-medium">Formula</p>
+          <p class="font-mono text-sm">Coast # = FIRE Number ÷ (1 + r)^(retirement age − current age)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MONTE CARLO ============ -->
+  <section id="stress" class="section pt-8 md:pt-12 bg-[var(--bg-soft)]">
+    <div class="container-app">
+
+      <div class="text-center mb-10">
+        <p class="pill mx-auto mb-3">Stress Test</p>
+        <h2 class="display-2 mb-3">Will it really last?</h2>
+        <p class="text-lg text-[var(--ink-soft)] max-w-2xl mx-auto">We run a thousand random market futures using your return and volatility assumptions, then count how many leave you solvent through your full retirement.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card p-6 text-center">
+          <p class="text-sm text-[var(--ink-mute)] uppercase tracking-wider mb-3">Success Probability</p>
+          <p id="successRate" class="display-2 mb-2">—</p>
+          <p id="successHelp" class="text-sm text-[var(--ink-soft)]">Click "Run simulation" to compute.</p>
+          <button id="runMonteCarlo" class="btn btn-primary mt-5 w-full">Run simulation</button>
+        </div>
+
+        <div class="card p-6 lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold">Outcome bands</h3>
+            <span class="text-xs text-[var(--ink-mute)]">10th / 50th / 90th percentile</span>
+          </div>
+          <div class="chart-wrap" style="height: 320px;">
+            <canvas id="mcChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div class="card p-5">
+          <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Worst case end balance</p>
+          <p id="mcWorst" class="text-xl font-semibold mt-1">—</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Median end balance</p>
+          <p id="mcMedian" class="text-xl font-semibold mt-1">—</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Best case end balance</p>
+          <p id="mcBest" class="text-xl font-semibold mt-1">—</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Failures (depleted)</p>
+          <p id="mcFailures" class="text-xl font-semibold mt-1">—</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EXPORT / IMPORT ============ -->
+  <section id="data" class="section pt-8 md:pt-12">
+    <div class="container-narrow text-center">
+      <p class="pill mx-auto mb-3">Your data, your control</p>
+      <h2 class="display-2 mb-3">Save and share your plan.</h2>
+      <p class="text-lg text-[var(--ink-soft)] mb-8 max-w-xl mx-auto">Auto-saved in your browser. Export as JSON to back up or move between devices.</p>
+      <div class="flex flex-wrap gap-3 justify-center">
+        <button id="exportBtn" class="btn btn-dark">Export JSON</button>
+        <button id="importBtn" class="btn btn-ghost">Import JSON</button>
+        <button id="resetBtn" class="btn btn-light">Reset all</button>
+        <input id="importFile" type="file" accept="application/json" class="hidden" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="border-t border-[var(--line-soft)] py-10 mt-6">
+    <div class="container-app px-4 text-center">
+      <p class="text-sm text-[var(--ink-mute)]">Ember is an educational tool — not financial, tax, or investment advice. Verify with a fiduciary advisor before acting.</p>
+      <p class="text-xs text-[var(--ink-mute)] mt-3">© 2026 Ember. Built for the FIRE community.</p>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Saved</div>
+
+  <!-- Add/edit scenario modal -->
+  <div id="scenarioModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="scenarioModalTitle" class="display-3">New scenario</h3>
+        <button id="scenarioModalClose" class="text-2xl text-[var(--ink-mute)] hover:text-[var(--ink)]">×</button>
+      </div>
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="input-label" for="sName">Scenario name</label>
+          <input id="sName" type="text" class="input" placeholder="e.g. Move to Austin" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="input-label" for="sSpend">Annual spend</label>
+            <div class="input-prefix" data-prefix="$">
+              <input id="sSpend" type="number" class="input" step="1000" />
+            </div>
+          </div>
+          <div>
+            <label class="input-label" for="sContribution">Annual savings</label>
+            <div class="input-prefix" data-prefix="$">
+              <input id="sContribution" type="number" class="input" step="500" />
+            </div>
+          </div>
+          <div>
+            <label class="input-label" for="sGrowth">Savings increase /yr</label>
+            <div class="flex items-center gap-3">
+              <input id="sGrowth" type="range" min="0" max="10" step="0.5" />
+              <span id="sGrowthLabel" class="text-sm font-medium w-12 text-right"></span>
+            </div>
+          </div>
+          <div>
+            <label class="input-label" for="sReturn">Expected real return</label>
+            <div class="flex items-center gap-3">
+              <input id="sReturn" type="range" min="2" max="10" step="0.25" />
+              <span id="sReturnLabel" class="text-sm font-medium w-14 text-right"></span>
+            </div>
+          </div>
+          <div>
+            <label class="input-label" for="sPortfolio">Starting portfolio</label>
+            <div class="input-prefix" data-prefix="$">
+              <input id="sPortfolio" type="number" class="input" step="1000" />
+            </div>
+          </div>
+          <div>
+            <label class="input-label" for="sWR">Withdrawal rate</label>
+            <div class="flex items-center gap-3">
+              <input id="sWR" type="range" min="2.5" max="5" step="0.1" />
+              <span id="sWRLabel" class="text-sm font-medium w-14 text-right"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 justify-end mt-6">
+        <button id="scenarioModalCancel" class="btn btn-light">Cancel</button>
+        <button id="scenarioModalSave" class="btn btn-dark">Save scenario</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  // FIRE CALCULATION ENGINE
+  // ============================================================
+
+  const fmt = {
+    money: (n) => {
+      if (n == null || !isFinite(n)) return '—';
+      const sign = n < 0 ? '-' : '';
+      const abs = Math.abs(n);
+      if (abs >= 1e6) return `${sign}$${(abs/1e6).toFixed(abs >= 1e7 ? 1 : 2)}M`;
+      if (abs >= 1e3) return `${sign}$${(abs/1e3).toFixed(0)}K`;
+      return `${sign}$${Math.round(abs).toLocaleString()}`;
+    },
+    moneyFull: (n) => {
+      if (n == null || !isFinite(n)) return '—';
+      return `$${Math.round(n).toLocaleString()}`;
+    },
+    pct: (n, digits = 1) => `${n.toFixed(digits)}%`,
+    int: (n) => Math.round(n).toString(),
+  };
+
+  // The "FIRE Number" — multiplier from a withdrawal rate.
+  // annualSpend here is the GROSS withdrawal need (already includes taxes).
+  function fireNumber(annualSpend, withdrawalRate) {
+    return annualSpend / withdrawalRate;
+  }
+
+  // Gross up a take-home spend to the withdrawal needed to pay taxes too.
+  // grossWithdrawal × (1 − taxRate) = takeHome  →  gross = takeHome ÷ (1 − taxRate).
+  function grossUpForTax(takeHomeSpend, taxRate) {
+    const r = Math.max(0, Math.min(0.6, taxRate || 0));
+    if (r >= 0.999) return Infinity;
+    return takeHomeSpend / (1 - r);
+  }
+
+  // Inflate a real (today's $) amount to nominal (future $) at a given age horizon.
+  function inflate(realAmount, inflationRate, years) {
+    return realAmount * Math.pow(1 + (inflationRate || 0), Math.max(0, years));
+  }
+
+  // Classify FIRE type by planned annual spend
+  function classifyFIRE(annualSpend) {
+    if (annualSpend < 25000) return { key: 'sublean', name: 'Sub-Lean FIRE',  desc: 'Extreme frugality — most planners aim higher.' };
+    if (annualSpend < 40000) return { key: 'lean',    name: 'Lean FIRE',      desc: 'Minimalist lifestyle with disciplined spending.' };
+    if (annualSpend < 80000) return { key: 'regular', name: 'Regular FIRE',   desc: 'Median U.S. household comfort — the classic FIRE target.' };
+    if (annualSpend < 200000) return { key: 'chubby', name: 'Chubby FIRE',    desc: 'Upper-middle-class comfort: travel, hobbies, no budget anxiety.' };
+    return                                            { key: 'fat',     name: 'Fat FIRE',       desc: 'Premium lifestyle without compromises.' };
+  }
+
+  const VARIANTS = [
+    { key: 'lean',    name: 'Lean FIRE',    range: [25000, 40000],   midSpend: 32500,  blurb: 'Minimalist, sub-$40k spend.', emoji: '🌱' },
+    { key: 'regular', name: 'Regular FIRE', range: [40000, 80000],   midSpend: 60000,  blurb: 'Comfortable median lifestyle.', emoji: '🏡' },
+    { key: 'chubby',  name: 'Chubby FIRE',  range: [80000, 200000],  midSpend: 120000, blurb: 'Upper-middle-class comfort.', emoji: '✨' },
+    { key: 'fat',     name: 'Fat FIRE',     range: [200000, 400000], midSpend: 300000, blurb: 'Premium, luxury lifestyle.', emoji: '💎' },
+  ];
+
+  // Year-by-year accumulation projection
+  // Returns { years: [...], values: [...] }
+  function project(scenario, maxYears = 70) {
+    const years = [];
+    const values = [];
+    let p = scenario.portfolio;
+    const r = scenario.realReturn;
+    const inc = scenario.contributionGrowth || 0;
+    const c0 = scenario.annualContribution;
+
+    for (let i = 0; i <= maxYears; i++) {
+      years.push(scenario.currentAge + i);
+      values.push(p);
+      const c = c0 * Math.pow(1 + inc, i);
+      p = p * (1 + r) + c;
+    }
+    return { years, values };
+  }
+
+  // Years until portfolio reaches target. null if not reached in maxYears.
+  function yearsToTarget(scenario, target, maxYears = 70) {
+    let p = scenario.portfolio;
+    const r = scenario.realReturn;
+    const inc = scenario.contributionGrowth || 0;
+    const c0 = scenario.annualContribution;
+    for (let i = 0; i <= maxYears; i++) {
+      if (p >= target) return i;
+      const c = c0 * Math.pow(1 + inc, i);
+      p = p * (1 + r) + c;
+    }
+    return null;
+  }
+
+  // Coast FIRE number (portfolio you need today that will grow to FI by retirement age, with no further contributions)
+  function coastFIRENumber(target, currentAge, retirementAge, realReturn) {
+    const t = Math.max(0, retirementAge - currentAge);
+    return target / Math.pow(1 + realReturn, t);
+  }
+
+  // Barista FIRE number
+  function baristaFIRENumber(annualSpend, partTimeIncome, healthcareSavings, withdrawalRate) {
+    const effectiveGap = Math.max(0, annualSpend - partTimeIncome - healthcareSavings);
+    return effectiveGap / withdrawalRate;
+  }
+
+  // Box-Muller for normal random draw
+  function randn(mean = 0, stdev = 1) {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return mean + stdev * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // Monte Carlo: accumulate to FIRE age, then draw down to lifeExpectancy
+  // Returns { successRate, percentiles: { p10: [...], p50: [...], p90: [...], years: [...] }, endBalances }
+  function monteCarlo(scenario, runs = 1000) {
+    const accumYears = Math.max(0, scenario.retirementAge - scenario.currentAge);
+    const drawYears = Math.max(0, scenario.lifeExpectancy - scenario.retirementAge);
+    const totalYears = accumYears + drawYears;
+    const mean = scenario.realReturn;
+    const sd = scenario.volatility;
+    const annualSpend = scenario.annualSpend;
+    const c0 = scenario.annualContribution;
+    const inc = scenario.contributionGrowth || 0;
+
+    const balancesByYear = [];
+    for (let y = 0; y <= totalYears; y++) balancesByYear.push([]);
+
+    let successes = 0;
+    const endBalances = [];
+
+    for (let run = 0; run < runs; run++) {
+      let p = scenario.portfolio;
+      let survived = true;
+      balancesByYear[0].push(p);
+      for (let y = 1; y <= totalYears; y++) {
+        const ret = randn(mean, sd);
+        p = p * (1 + ret);
+        if (y <= accumYears) {
+          // Accumulation
+          const c = c0 * Math.pow(1 + inc, y - 1);
+          p += c;
+        } else {
+          // Drawdown
+          p -= annualSpend;
+        }
+        if (p < 0) {
+          p = 0;
+          survived = false;
+        }
+        balancesByYear[y].push(p);
+      }
+      if (survived && p > 0) successes++;
+      endBalances.push(p);
+    }
+
+    // Compute percentiles per year
+    const years = [];
+    const p10 = [], p50 = [], p90 = [];
+    for (let y = 0; y <= totalYears; y++) {
+      years.push(scenario.currentAge + y);
+      const sorted = balancesByYear[y].slice().sort((a, b) => a - b);
+      p10.push(sorted[Math.floor(sorted.length * 0.1)]);
+      p50.push(sorted[Math.floor(sorted.length * 0.5)]);
+      p90.push(sorted[Math.floor(sorted.length * 0.9)]);
+    }
+
+    const sortedEnd = endBalances.slice().sort((a,b)=>a-b);
+    return {
+      successRate: successes / runs,
+      failures: runs - successes,
+      runs,
+      percentiles: { years, p10, p50, p90 },
+      endStats: {
+        worst: sortedEnd[0],
+        median: sortedEnd[Math.floor(sortedEnd.length / 2)],
+        best: sortedEnd[sortedEnd.length - 1],
+      },
+    };
+  }
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
+  const STORAGE_KEY = 'ember.fire.v1';
+
+  const DEFAULT_GLOBAL = {
+    currentAge: 32,
+    retirementAge: 50,
+    lifeExpectancy: 95,
+    household: 'couple',
+
+    // Balances by account type (today's $)
+    balCash: 20000,
+    balTaxable: 40000,
+    balTraditional: 100000,
+    balRoth: 20000,
+    balHSA: 0,
+
+    // Annual contributions by account
+    conCash: 0,
+    conTaxable: 10000,
+    conTraditional: 23000,
+    conRoth: 7000,
+    conHSA: 2000,
+
+    contributionGrowth: 0.03,
+    annualSpend: 80000,        // take-home (after-tax) in today's $
+    retirementTaxRate: 0.10,   // effective tax rate on gross withdrawal
+    inflation: 0.03,
+    realReturn: 0.06,
+    volatility: 0.15,
+    withdrawalRate: 0.04,
+    partTimeIncome: 20000,
+    healthcareSavings: 9000,
+    coastRetirementAge: 65,
+  };
+
+  // Suggested default effective tax rate by household
+  function suggestedTaxRate(household) {
+    return household === 'couple' ? 0.10 : 0.12;
+  }
+
+  // Sum all account balances
+  function totalPortfolio(g) {
+    return (g.balCash||0) + (g.balTaxable||0) + (g.balTraditional||0) + (g.balRoth||0) + (g.balHSA||0);
+  }
+  // Sum all contributions
+  function totalContribution(g) {
+    return (g.conCash||0) + (g.conTaxable||0) + (g.conTraditional||0) + (g.conRoth||0) + (g.conHSA||0);
+  }
+  // Bridge-eligible (accessible before 59.5) balance today: cash + taxable.
+  // (Roth basis is also accessible but we don't know basis vs growth; we surface a note instead.)
+  function bridgeEligibleBalanceToday(g) {
+    return (g.balCash||0) + (g.balTaxable||0);
+  }
+  function bridgeEligibleContribution(g) {
+    return (g.conCash||0) + (g.conTaxable||0);
+  }
+
+  const SCENARIO_COLORS = [
+    '#0071e3', '#34c759', '#ff9f0a', '#af52de',
+    '#ff2d92', '#5ac8fa', '#ff3b30', '#5856d6',
+  ];
+
+  let state = loadState();
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return freshState();
+      const parsed = JSON.parse(raw);
+      if (!parsed.global || !parsed.scenarios) return freshState();
+      return migrateState(parsed);
+    } catch (e) {
+      return freshState();
+    }
+  }
+
+  // Backfill any missing fields from DEFAULT_GLOBAL so old saved states keep working.
+  function migrateState(s) {
+    const g = s.global || {};
+    // If an old single-portfolio state exists, push it into balTaxable as a reasonable default.
+    if (g.portfolio != null && g.balTaxable == null && g.balCash == null && g.balTraditional == null && g.balRoth == null) {
+      g.balTaxable = g.portfolio;
+      g.balCash = g.balTraditional = g.balRoth = g.balHSA = 0;
+    }
+    if (g.annualContribution != null && g.conTaxable == null && g.conCash == null && g.conTraditional == null && g.conRoth == null) {
+      g.conTaxable = g.annualContribution;
+      g.conCash = g.conTraditional = g.conRoth = g.conHSA = 0;
+    }
+    for (const k of Object.keys(DEFAULT_GLOBAL)) {
+      if (g[k] == null) g[k] = DEFAULT_GLOBAL[k];
+    }
+    s.global = g;
+    // Ensure each scenario has portfolio/annualContribution
+    s.scenarios = (s.scenarios || []).map(sc => ({
+      portfolio: sc.portfolio ?? totalPortfolio(g),
+      annualContribution: sc.annualContribution ?? totalContribution(g),
+      contributionGrowth: sc.contributionGrowth ?? g.contributionGrowth,
+      annualSpend: sc.annualSpend ?? g.annualSpend,
+      realReturn: sc.realReturn ?? g.realReturn,
+      withdrawalRate: sc.withdrawalRate ?? g.withdrawalRate,
+      ...sc,
+    }));
+    return s;
+  }
+
+  function freshState() {
+    const g = { ...DEFAULT_GLOBAL };
+    const totalP = totalPortfolio(g);
+    const totalC = totalContribution(g);
+    return {
+      global: g,
+      scenarios: [
+        {
+          id: cryptoId(),
+          name: 'Baseline',
+          color: SCENARIO_COLORS[0],
+          visible: true,
+          portfolio: totalP,
+          annualContribution: totalC,
+          contributionGrowth: g.contributionGrowth,
+          annualSpend: g.annualSpend,
+          realReturn: g.realReturn,
+          withdrawalRate: g.withdrawalRate,
+        },
+        {
+          id: cryptoId(),
+          name: 'Aggressive Saver (+$1k/mo)',
+          color: SCENARIO_COLORS[1],
+          visible: true,
+          portfolio: totalP,
+          annualContribution: totalC + 12000,
+          contributionGrowth: g.contributionGrowth,
+          annualSpend: g.annualSpend,
+          realReturn: g.realReturn,
+          withdrawalRate: g.withdrawalRate,
+        },
+        {
+          id: cryptoId(),
+          name: 'Lean Lifestyle',
+          color: SCENARIO_COLORS[2],
+          visible: true,
+          portfolio: totalP,
+          annualContribution: totalC,
+          contributionGrowth: g.contributionGrowth,
+          annualSpend: 50000,
+          realReturn: g.realReturn,
+          withdrawalRate: g.withdrawalRate,
+        },
+      ],
+    };
+  }
+
+  function cryptoId() {
+    if (window.crypto && crypto.getRandomValues) {
+      const arr = new Uint8Array(8); crypto.getRandomValues(arr);
+      return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+    return Math.random().toString(36).slice(2);
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // ============================================================
+  // UI HELPERS
+  // ============================================================
+
+  function $(sel) { return document.querySelector(sel); }
+  function $$(sel) { return Array.from(document.querySelectorAll(sel)); }
+
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  // ============================================================
+  // RENDER: Inputs <-> State
+  // ============================================================
+
+  function syncInputsFromState() {
+    const g = state.global;
+    $('#currentAge').value = g.currentAge;
+    $('#retirementAge').value = g.retirementAge;
+    $('#lifeExpectancy').value = g.lifeExpectancy;
+    $('#household').value = g.household;
+    // Account balances
+    $('#balCash').value = g.balCash;
+    $('#balTaxable').value = g.balTaxable;
+    $('#balTraditional').value = g.balTraditional;
+    $('#balRoth').value = g.balRoth;
+    $('#balHSA').value = g.balHSA;
+    // Contributions
+    $('#conCash').value = g.conCash;
+    $('#conTaxable').value = g.conTaxable;
+    $('#conTraditional').value = g.conTraditional;
+    $('#conRoth').value = g.conRoth;
+    $('#conHSA').value = g.conHSA;
+    $('#contributionGrowth').value = (g.contributionGrowth * 100).toFixed(1);
+    $('#contributionGrowthLabel').textContent = (g.contributionGrowth * 100).toFixed(1) + '%';
+    $('#annualSpend').value = g.annualSpend;
+    $('#retirementTaxRate').value = (g.retirementTaxRate * 100).toFixed(1);
+    $('#retirementTaxRateLabel').textContent = (g.retirementTaxRate * 100).toFixed(1) + '%';
+    $('#inflation').value = (g.inflation * 100).toFixed(1);
+    $('#inflationLabel').textContent = (g.inflation * 100).toFixed(1) + '%';
+    $('#realReturn').value = (g.realReturn * 100).toFixed(2);
+    $('#realReturnLabel').textContent = (g.realReturn * 100).toFixed(1) + '%';
+    $('#volatility').value = (g.volatility * 100).toFixed(1);
+    $('#volatilityLabel').textContent = (g.volatility * 100).toFixed(1) + '%';
+    $('#withdrawalRate').value = (g.withdrawalRate * 100).toFixed(1);
+    $('#withdrawalRateLabel').textContent = (g.withdrawalRate * 100).toFixed(1) + '%';
+    $('#partTimeIncome').value = g.partTimeIncome;
+    $('#healthcareSavings').value = g.healthcareSavings;
+    $('#coastRetirementAge').value = g.coastRetirementAge;
+  }
+
+  function readGlobalsFromInputs() {
+    const g = state.global;
+    g.currentAge = +$('#currentAge').value || 0;
+    g.retirementAge = +$('#retirementAge').value || 0;
+    g.lifeExpectancy = +$('#lifeExpectancy').value || 0;
+    const newHousehold = $('#household').value;
+    if (newHousehold !== g.household) {
+      // When household flips, gently nudge the tax-rate default if user hasn't overridden meaningfully
+      const before = suggestedTaxRate(g.household);
+      const after = suggestedTaxRate(newHousehold);
+      if (Math.abs(g.retirementTaxRate - before) < 0.001) g.retirementTaxRate = after;
+    }
+    g.household = newHousehold;
+
+    g.balCash = +$('#balCash').value || 0;
+    g.balTaxable = +$('#balTaxable').value || 0;
+    g.balTraditional = +$('#balTraditional').value || 0;
+    g.balRoth = +$('#balRoth').value || 0;
+    g.balHSA = +$('#balHSA').value || 0;
+
+    g.conCash = +$('#conCash').value || 0;
+    g.conTaxable = +$('#conTaxable').value || 0;
+    g.conTraditional = +$('#conTraditional').value || 0;
+    g.conRoth = +$('#conRoth').value || 0;
+    g.conHSA = +$('#conHSA').value || 0;
+
+    g.contributionGrowth = (+$('#contributionGrowth').value || 0) / 100;
+    g.annualSpend = +$('#annualSpend').value || 0;
+    g.retirementTaxRate = (+$('#retirementTaxRate').value || 0) / 100;
+    g.inflation = (+$('#inflation').value || 0) / 100;
+    g.realReturn = (+$('#realReturn').value || 0) / 100;
+    g.volatility = (+$('#volatility').value || 0) / 100;
+    g.withdrawalRate = (+$('#withdrawalRate').value || 0) / 100;
+    g.partTimeIncome = +$('#partTimeIncome').value || 0;
+    g.healthcareSavings = +$('#healthcareSavings').value || 0;
+    g.coastRetirementAge = +$('#coastRetirementAge').value || 0;
+
+    $('#contributionGrowthLabel').textContent = (g.contributionGrowth * 100).toFixed(1) + '%';
+    $('#retirementTaxRateLabel').textContent = (g.retirementTaxRate * 100).toFixed(1) + '%';
+    $('#inflationLabel').textContent = (g.inflation * 100).toFixed(1) + '%';
+    $('#realReturnLabel').textContent = (g.realReturn * 100).toFixed(1) + '%';
+    $('#volatilityLabel').textContent = (g.volatility * 100).toFixed(1) + '%';
+    $('#withdrawalRateLabel').textContent = (g.withdrawalRate * 100).toFixed(1) + '%';
+
+    // Totals chips
+    $('#portfolioTotalChip').textContent = 'Total: ' + fmt.moneyFull(totalPortfolio(g));
+    $('#contributionTotalChip').textContent = 'Total: ' + fmt.moneyFull(totalContribution(g)) + ' / yr';
+
+    // Gross spend display
+    const gross = grossUpForTax(g.annualSpend, g.retirementTaxRate);
+    $('#grossSpendDisplay').textContent = fmt.moneyFull(gross);
+
+    // Keep the baseline scenario in sync with globals for convenience
+    const baseline = state.scenarios[0];
+    if (baseline && baseline.name === 'Baseline') {
+      baseline.portfolio = totalPortfolio(g);
+      baseline.annualContribution = totalContribution(g);
+      baseline.contributionGrowth = g.contributionGrowth;
+      baseline.annualSpend = g.annualSpend;
+      baseline.realReturn = g.realReturn;
+      baseline.withdrawalRate = g.withdrawalRate;
+    }
+  }
+
+  // ============================================================
+  // RENDER: Classification + Variants
+  // ============================================================
+
+  function renderClassificationAndVariants() {
+    const g = state.global;
+
+    // Classification is based on take-home (lifestyle) spend, which is how users think about it.
+    const cls = classifyFIRE(g.annualSpend);
+    $('#classificationName').textContent = cls.name + ' planner';
+    $('#classificationDesc').textContent = cls.desc + ' (lifestyle tier based on take-home spend)';
+
+    // Gross-up for tax, then compute FIRE number
+    const grossSpend = grossUpForTax(g.annualSpend, g.retirementTaxRate);
+    const yourFire = fireNumber(grossSpend, g.withdrawalRate);
+    $('#yourFireNumber').textContent = fmt.money(yourFire);
+    $('#yourFireNumberHelp').textContent = `in today's $ @ ${(g.withdrawalRate*100).toFixed(1)}% withdrawal • includes ${(g.retirementTaxRate*100).toFixed(0)}% tax gross-up`;
+
+    const baselineScenario = {
+      portfolio: totalPortfolio(g),
+      annualContribution: totalContribution(g),
+      contributionGrowth: g.contributionGrowth,
+      realReturn: g.realReturn,
+      currentAge: g.currentAge,
+    };
+    const years = yearsToTarget(baselineScenario, yourFire);
+    $('#yearsToFire').textContent = years == null ? '50+' : years;
+    $('#ageAtFire').textContent = years == null ? 'beyond 50 years' : `at age ${g.currentAge + years}`;
+
+    const targetYears = Math.max(0, g.retirementAge - g.currentAge);
+    let label, klass, help;
+    if (years == null) {
+      label = 'Off track'; klass = 'pill-danger'; help = "Plan doesn't reach FIRE within 50 years.";
+    } else if (years <= targetYears) {
+      label = 'On track'; klass = 'pill-positive'; help = `${targetYears - years} years ahead of goal`;
+    } else {
+      label = 'Behind'; klass = 'pill-warn'; help = `${years - targetYears} years past your goal age`;
+    }
+    const onTrackEl = $('#onTrackLabel');
+    onTrackEl.textContent = label;
+    onTrackEl.className = 'display-3 mb-1';
+    if (klass === 'pill-positive') onTrackEl.style.color = 'var(--positive)';
+    else if (klass === 'pill-warn') onTrackEl.style.color = 'var(--warn)';
+    else if (klass === 'pill-danger') onTrackEl.style.color = 'var(--danger)';
+    else onTrackEl.style.color = '';
+    $('#onTrackHelp').textContent = help;
+
+    // Today vs Future $$ display
+    const yearsToRet = Math.max(0, g.retirementAge - g.currentAge);
+    $('#inflationChip').textContent = `Inflation: ${(g.inflation*100).toFixed(1)}%/yr • ${yearsToRet} yrs to age ${g.retirementAge}`;
+    $('#spendTodayLbl').textContent = fmt.moneyFull(g.annualSpend);
+    $('#spendFutureLbl').textContent = fmt.moneyFull(inflate(g.annualSpend, g.inflation, yearsToRet));
+    $('#grossTodayLbl').textContent = fmt.moneyFull(grossSpend);
+    $('#grossFutureLbl').textContent = fmt.moneyFull(inflate(grossSpend, g.inflation, yearsToRet));
+    $('#fireTodayLbl').textContent = fmt.money(yourFire);
+    $('#fireFutureLbl').textContent = fmt.money(inflate(yourFire, g.inflation, yearsToRet));
+
+    // Bridge-age warning
+    renderBridgeWarning(g, grossSpend, baselineScenario);
+
+    // Variant cards (gross up each variant's mid-spend for fair comparison)
+    const grid = $('#variantsGrid');
+    grid.innerHTML = '';
+    VARIANTS.forEach(v => {
+      const grossMid = grossUpForTax(v.midSpend, g.retirementTaxRate);
+      const target = fireNumber(grossMid, g.withdrawalRate);
+      const ytt = yearsToTarget(baselineScenario, target);
+      const monthly = v.midSpend / 12;
+      const isMatch = cls.key === v.key;
+
+      const card = document.createElement('div');
+      card.className = `card variant-card p-6 ${isMatch ? 'is-match' : ''}`;
+      card.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-2xl">${v.emoji}</span>
+          ${isMatch ? '<span class="pill pill-brand">Your match</span>' : ''}
+        </div>
+        <h4 class="font-semibold text-lg mb-1">${v.name}</h4>
+        <p class="text-sm text-[var(--ink-mute)] mb-4">${v.blurb}</p>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p class="text-[var(--ink-mute)] text-xs">Take-home spend</p>
+            <p class="font-medium">${fmt.money(v.range[0])}–${fmt.money(v.range[1])}</p>
+          </div>
+          <div>
+            <p class="text-[var(--ink-mute)] text-xs">Monthly</p>
+            <p class="font-medium">${fmt.money(monthly)}</p>
+          </div>
+          <div>
+            <p class="text-[var(--ink-mute)] text-xs">FIRE # (today's $)</p>
+            <p class="font-medium">${fmt.money(target)}</p>
+          </div>
+          <div>
+            <p class="text-[var(--ink-mute)] text-xs">Years to it</p>
+            <p class="font-medium">${ytt == null ? '50+' : ytt}</p>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Project a single bucket year-by-year using shared return and contribution-growth rate
+  function projectBucket(startBal, annualContrib, contributionGrowth, realReturn, years) {
+    const out = [startBal];
+    let p = startBal;
+    for (let i = 1; i <= years; i++) {
+      const c = annualContrib * Math.pow(1 + contributionGrowth, i - 1);
+      p = p * (1 + realReturn) + c;
+      out.push(p);
+    }
+    return out;
+  }
+
+  function renderBridgeWarning(g, grossSpend, baseline) {
+    const card = $('#bridgeCard');
+    const PENALTY_AGE = 59.5;
+    if (g.retirementAge >= PENALTY_AGE) {
+      card.innerHTML = `
+        <div class="card p-5 flex items-start gap-4">
+          <span class="text-2xl">✅</span>
+          <div>
+            <p class="font-semibold">No early-withdrawal bridge needed.</p>
+            <p class="text-sm text-[var(--ink-soft)] mt-1">Your target retirement age (${g.retirementAge}) is at or after 59½, so all tax-advantaged accounts are accessible penalty-free.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const bridgeYears = PENALTY_AGE - g.retirementAge;
+    const yearsToRet = Math.max(0, g.retirementAge - g.currentAge);
+
+    // Project cash + taxable balances to retirement age
+    const cashAtRet = projectBucket(g.balCash, g.conCash, g.contributionGrowth, g.realReturn, yearsToRet).slice(-1)[0];
+    const taxableAtRet = projectBucket(g.balTaxable, g.conTaxable, g.contributionGrowth, g.realReturn, yearsToRet).slice(-1)[0];
+    const rothAtRet = projectBucket(g.balRoth, g.conRoth, g.contributionGrowth, g.realReturn, yearsToRet).slice(-1)[0];
+    const bridgeAvailable = cashAtRet + taxableAtRet;
+
+    // Bridge need = gross spend × bridge years, both in today's $.
+    // (Taxable withdrawals carry mostly LTCG/qualified-div tax; gross-up roughly accounts for that.)
+    const bridgeNeed = grossSpend * bridgeYears;
+    const gap = bridgeNeed - bridgeAvailable;
+    const ok = gap <= 0;
+
+    const fullFire = fireNumber(grossSpend, g.withdrawalRate);
+    const totalAtRet = bridgeAvailable + rothAtRet + projectBucket(g.balTraditional, g.conTraditional, g.contributionGrowth, g.realReturn, yearsToRet).slice(-1)[0] + projectBucket(g.balHSA, g.conHSA, g.contributionGrowth, g.realReturn, yearsToRet).slice(-1)[0];
+    const onTrackFire = totalAtRet >= fullFire;
+
+    const headline = ok
+      ? `✅ You have enough taxable + cash to bridge from age ${g.retirementAge} to 59½.`
+      : `⚠️ You'll be short on bridge funds to retire at ${g.retirementAge}.`;
+
+    const ribbon = ok
+      ? 'bg-[rgba(52,199,89,0.10)] border-[rgba(52,199,89,0.45)]'
+      : 'bg-[rgba(255,159,10,0.10)] border-[rgba(255,159,10,0.55)]';
+
+    card.innerHTML = `
+      <div class="card ${ribbon} p-6 md:p-8" style="border-width:1.5px">
+        <div class="flex items-start justify-between gap-4 mb-4 flex-wrap">
+          <p class="font-semibold text-lg">${headline}</p>
+          <span class="pill ${ok ? 'pill-positive' : 'pill-warn'}">${bridgeYears.toFixed(1)} bridge year${bridgeYears===1?'':'s'}</span>
+        </div>
+        <p class="text-sm text-[var(--ink-soft)] mb-5">Retiring at ${g.retirementAge} means a ${bridgeYears.toFixed(1)}-year gap before tax-advantaged accounts (401k, IRA, Roth growth, HSA) are accessible without penalty at age 59½. You bridge this with cash + taxable funds${onTrackFire ? '' : " — and right now your total portfolio also isn't projected to hit your full FIRE number by then"}.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="card-soft p-4">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Bridge need</p>
+            <p class="text-xl font-semibold mt-1">${fmt.money(bridgeNeed)}</p>
+            <p class="text-xs text-[var(--ink-mute)] mt-1">${fmt.money(grossSpend)} gross × ${bridgeYears.toFixed(1)} yrs</p>
+          </div>
+          <div class="card-soft p-4">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">Bridge funds projected at age ${g.retirementAge}</p>
+            <p class="text-xl font-semibold mt-1">${fmt.money(bridgeAvailable)}</p>
+            <p class="text-xs text-[var(--ink-mute)] mt-1">Cash ${fmt.money(cashAtRet)} + Taxable ${fmt.money(taxableAtRet)}</p>
+          </div>
+          <div class="card-soft p-4">
+            <p class="text-xs text-[var(--ink-mute)] uppercase tracking-wider">${ok ? 'Surplus' : 'Shortfall'}</p>
+            <p class="text-xl font-semibold mt-1" style="color: ${ok ? 'var(--positive)' : 'var(--warn)'}">${ok ? '+' : '−'}${fmt.money(Math.abs(gap))}</p>
+            <p class="text-xs text-[var(--ink-mute)] mt-1">${ok ? 'Bridge fully covered' : 'Extra you need in cash/taxable'}</p>
+          </div>
+        </div>
+        ${!ok ? `
+        <div class="mt-5 pt-5 border-t border-[var(--line-soft)]">
+          <p class="font-medium mb-2">Ways to close the gap:</p>
+          <ul class="text-sm text-[var(--ink-soft)] space-y-1 list-disc pl-5">
+            <li>Add ~${fmt.money(Math.max(1, gap / Math.max(1, yearsToRet)))} per year to cash or taxable for the next ${yearsToRet} years.</li>
+            <li>Delay retirement to age ${Math.min(60, Math.ceil(PENALTY_AGE))} so 401k/IRA become accessible immediately.</li>
+            <li>Start a Roth Conversion Ladder 5 years before retirement to unlock tax-deferred funds.</li>
+            <li>Use Rule of 55 or SEPP 72(t) - both let you tap tax-deferred funds early with restrictions.</li>
+            <li>Use your Roth contribution basis (~${fmt.money(rothAtRet)} projected Roth balance - basis is withdrawable anytime).</li>
+          </ul>
+        </div>` : ''}
+      </div>`;
+  }
+
+  // ============================================================
+  // RENDER: Scenarios + Chart
+  // ============================================================
+
+  let scenarioChart = null;
+
+  function renderScenarios() {
+    const list = $('#scenarioList');
+    list.innerHTML = '';
+    state.scenarios.forEach((s) => {
+      const item = document.createElement('div');
+      item.className = 'flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-tint)] transition';
+      item.innerHTML = `
+        <input type="checkbox" ${s.visible ? 'checked' : ''} data-id="${s.id}" class="scenario-toggle"
+               style="accent-color: ${s.color};" aria-label="toggle ${escapeHtml(s.name)}" />
+        <span class="swatch" style="background:${s.color}"></span>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium text-sm truncate">${escapeHtml(s.name)}</p>
+          <p class="text-xs text-[var(--ink-mute)] truncate">${fmt.money(s.annualContribution)}/yr &middot; ${fmt.money(s.annualSpend)} spend &middot; ${(s.realReturn*100).toFixed(1)}%</p>
+        </div>
+        <button class="text-xs text-[var(--ink-mute)] hover:text-[var(--ink)] scenario-edit" data-id="${s.id}">Edit</button>
+        ${state.scenarios.length > 1 ? `<button class="text-xs text-[var(--ink-mute)] hover:text-[var(--danger)] scenario-delete" data-id="${s.id}">&times;</button>` : ''}
+      `;
+      list.appendChild(item);
+    });
+    $$('.scenario-toggle').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const id = e.target.dataset.id;
+        const s = state.scenarios.find(x => x.id === id);
+        if (s) { s.visible = e.target.checked; saveState(); renderScenarioChart(); renderScenarioTable(); }
+      });
+    });
+    $$('.scenario-edit').forEach(el => {
+      el.addEventListener('click', (e) => openScenarioModal(e.currentTarget.dataset.id));
+    });
+    $$('.scenario-delete').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        state.scenarios = state.scenarios.filter(s => s.id !== id);
+        saveState(); renderScenarios(); renderScenarioChart(); renderScenarioTable();
+      });
+    });
+    renderScenarioChart();
+    renderScenarioTable();
+  }
+
+  function renderScenarioChart() {
+    const g = state.global;
+    const yearsHorizon = Math.max(20, g.lifeExpectancy - g.currentAge);
+    const visible = state.scenarios.filter(s => s.visible);
+    const datasets = visible.map(s => {
+      const sc = { ...s, currentAge: g.currentAge };
+      const p = project(sc, yearsHorizon);
+      return {
+        label: s.name,
+        data: p.values.map((v, i) => ({ x: p.years[i], y: v })),
+        borderColor: s.color,
+        backgroundColor: s.color + '15',
+        borderWidth: 2.5,
+        tension: 0.25,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        fill: false,
+      };
+    });
+    const target = fireNumber(grossUpForTax(g.annualSpend, g.retirementTaxRate), g.withdrawalRate);
+    datasets.push({
+      label: `FIRE Target (${fmt.money(target)})`,
+      data: [{ x: g.currentAge, y: target }, { x: g.currentAge + yearsHorizon, y: target }],
+      borderColor: '#1d1d1f',
+      borderDash: [6, 6],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+    });
+    if (scenarioChart) scenarioChart.destroy();
+    const ctx = document.getElementById('scenarioChart').getContext('2d');
+    scenarioChart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, font: { family: 'Inter', size: 12 } } },
+          tooltip: {
+            backgroundColor: 'rgba(29,29,31,0.95)',
+            padding: 12, cornerRadius: 12, titleFont: { family: 'Inter', weight: '600' }, bodyFont: { family: 'Inter' },
+            callbacks: {
+              title: (items) => `Age ${items[0].parsed.x}`,
+              label: (item) => `${item.dataset.label}: ${fmt.money(item.parsed.y)}`,
+            },
+          },
+        },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'Age', font: { family: 'Inter' } }, grid: { color: '#e8e8ed' }, ticks: { font: { family: 'Inter' } } },
+          y: { title: { display: true, text: 'Portfolio value', font: { family: 'Inter' } }, grid: { color: '#e8e8ed' }, ticks: { callback: (v) => fmt.money(v), font: { family: 'Inter' } } },
+        },
+      },
+    });
+  }
+
+  function renderScenarioTable() {
+    const g = state.global;
+    const tbody = $('#scenarioTableBody');
+    tbody.innerHTML = '';
+    state.scenarios.forEach(s => {
+      const grossSpend = grossUpForTax(s.annualSpend, g.retirementTaxRate);
+      const target = fireNumber(grossSpend, s.withdrawalRate);
+      const sc = { ...s, currentAge: g.currentAge };
+      const ytt = yearsToTarget(sc, target);
+      const coast = coastFIRENumber(target, g.currentAge, g.retirementAge, s.realReturn);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="swatch align-middle mr-2" style="background:${s.color}"></span><span class="${s.visible ? '' : 'opacity-50'}">${escapeHtml(s.name)}</span></td>
+        <td class="num">${fmt.money(target)}</td>
+        <td class="num">${ytt == null ? '50+' : ytt}</td>
+        <td class="num">${ytt == null ? '&mdash;' : g.currentAge + ytt}</td>
+        <td class="num">${fmt.money(coast)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ============================================================
+  // RENDER: Barista + Coast
+  // ============================================================
+
+  function renderBarista() {
+    const g = state.global;
+    const grossSpend = grossUpForTax(g.annualSpend, g.retirementTaxRate);
+    const baristaN = baristaFIRENumber(grossSpend, g.partTimeIncome, g.healthcareSavings, g.withdrawalRate);
+    const fullN = fireNumber(grossSpend, g.withdrawalRate);
+    $('#baristaNumber').textContent = fmt.money(baristaN);
+    $('#baristaSavings').textContent = fmt.money(Math.max(0, fullN - baristaN)) + ' less';
+    const sc = {
+      portfolio: totalPortfolio(g), annualContribution: totalContribution(g),
+      contributionGrowth: g.contributionGrowth, realReturn: g.realReturn, currentAge: g.currentAge,
+    };
+    const ytt = yearsToTarget(sc, baristaN);
+    $('#baristaYears').textContent = ytt == null ? '50+ years' : `${ytt} years`;
+  }
+
+  function renderCoast() {
+    const g = state.global;
+    const grossSpend = grossUpForTax(g.annualSpend, g.retirementTaxRate);
+    const fullN = fireNumber(grossSpend, g.withdrawalRate);
+    const coastN = coastFIRENumber(fullN, g.currentAge, g.coastRetirementAge, g.realReturn);
+    $('#coastNumber').textContent = fmt.money(coastN);
+    const discount = fullN > 0 ? (1 - coastN / fullN) * 100 : 0;
+    $('#coastDiscount').textContent = `${discount.toFixed(0)}% less`;
+    let p = totalPortfolio(g);
+    const r = g.realReturn;
+    const inc = g.contributionGrowth;
+    const c0 = totalContribution(g);
+    let coastAge = null;
+    for (let i = 0; i <= 80; i++) {
+      const ageNow = g.currentAge + i;
+      const yearsRemaining = Math.max(0, g.coastRetirementAge - ageNow);
+      const threshold = fullN / Math.pow(1 + r, yearsRemaining);
+      if (p >= threshold) { coastAge = ageNow; break; }
+      const c = c0 * Math.pow(1 + inc, i);
+      p = p * (1 + r) + c;
+    }
+    $('#coastAge').textContent = coastAge == null ? '50+' : coastAge;
+    if (coastAge != null && coastAge <= g.currentAge) {
+      $('#coastAgeHelp').textContent = "You're already coasting! You could stop saving today.";
+    } else if (coastAge == null) {
+      $('#coastAgeHelp').textContent = 'Not reached within 80 years at current savings rate.';
+    } else {
+      $('#coastAgeHelp').textContent = `${coastAge - g.currentAge} more years of saving at today's rate.`;
+    }
+  }
+
+  // ============================================================
+  // RENDER: Monte Carlo
+  // ============================================================
+
+  let mcChart = null;
+
+  function renderMonteCarloPlaceholder() {
+    if (mcChart) { mcChart.destroy(); mcChart = null; }
+    const ctx = document.getElementById('mcChart').getContext('2d');
+    mcChart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: 'Run a simulation to see outcome bands', data: [], borderColor: '#d2d2d7' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'Age' }, ticks: { font: { family: 'Inter' } }, grid: { color: '#e8e8ed' } },
+          y: { ticks: { callback: (v) => fmt.money(v), font: { family: 'Inter' } }, grid: { color: '#e8e8ed' } },
+        },
+      },
+    });
+  }
+
+  function runAndRenderMonteCarlo() {
+    const g = state.global;
+    const scenario = {
+      portfolio: totalPortfolio(g),
+      annualContribution: totalContribution(g),
+      contributionGrowth: g.contributionGrowth,
+      realReturn: g.realReturn,
+      volatility: g.volatility,
+      annualSpend: grossUpForTax(g.annualSpend, g.retirementTaxRate),
+      currentAge: g.currentAge,
+      retirementAge: g.retirementAge,
+      lifeExpectancy: g.lifeExpectancy,
+    };
+    $('#successRate').textContent = '...';
+    $('#successHelp').textContent = 'Crunching 1,000 simulated futures...';
+    setTimeout(() => {
+      const result = monteCarlo(scenario, 1000);
+      const pct = (result.successRate * 100).toFixed(0);
+      $('#successRate').textContent = pct + '%';
+      $('#successRate').style.color = result.successRate >= 0.85 ? 'var(--positive)' : result.successRate >= 0.7 ? 'var(--warn)' : 'var(--danger)';
+      $('#successHelp').textContent = `Of 1,000 simulated futures, ${result.runs - result.failures} keep money through age ${g.lifeExpectancy}.`;
+      $('#mcWorst').textContent = fmt.money(result.endStats.worst);
+      $('#mcMedian').textContent = fmt.money(result.endStats.median);
+      $('#mcBest').textContent = fmt.money(result.endStats.best);
+      $('#mcFailures').textContent = `${result.failures} of ${result.runs}`;
+      const { years, p10, p50, p90 } = result.percentiles;
+      if (mcChart) mcChart.destroy();
+      const ctx = document.getElementById('mcChart').getContext('2d');
+      mcChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            { label: '90th percentile', data: years.map((y, i) => ({ x: y, y: p90[i] })), borderColor: '#34c759', backgroundColor: 'rgba(52,199,89,0.18)', fill: '+1', pointRadius: 0, tension: 0.25, borderWidth: 1.5 },
+            { label: 'Median',          data: years.map((y, i) => ({ x: y, y: p50[i] })), borderColor: '#0071e3', backgroundColor: 'rgba(0,113,227,0.18)', fill: '+1', pointRadius: 0, tension: 0.25, borderWidth: 2 },
+            { label: '10th percentile', data: years.map((y, i) => ({ x: y, y: p10[i] })), borderColor: '#ff3b30', backgroundColor: 'transparent', pointRadius: 0, tension: 0.25, borderWidth: 1.5 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, font: { family: 'Inter' } } },
+            tooltip: {
+              backgroundColor: 'rgba(29,29,31,0.95)', padding: 12, cornerRadius: 12,
+              callbacks: {
+                title: (items) => `Age ${items[0].parsed.x}`,
+                label: (item) => `${item.dataset.label}: ${fmt.money(item.parsed.y)}`,
+              },
+            },
+          },
+          scales: {
+            x: { type: 'linear', title: { display: true, text: 'Age', font: { family: 'Inter' } }, grid: { color: '#e8e8ed' }, ticks: { font: { family: 'Inter' } } },
+            y: { title: { display: true, text: 'Portfolio value', font: { family: 'Inter' } }, grid: { color: '#e8e8ed' }, ticks: { callback: (v) => fmt.money(v), font: { family: 'Inter' } } },
+          },
+        },
+      });
+    }, 60);
+  }
+
+  // ============================================================
+  // SCENARIO MODAL
+  // ============================================================
+
+  let editingScenarioId = null;
+  const modal = $('#scenarioModal');
+
+  function openScenarioModal(id) {
+    editingScenarioId = id;
+    let s;
+    if (id) {
+      s = state.scenarios.find(x => x.id === id);
+      $('#scenarioModalTitle').textContent = 'Edit scenario';
+    } else {
+      const g = state.global;
+      s = {
+        name: 'New scenario',
+        portfolio: totalPortfolio(g),
+        annualContribution: totalContribution(g),
+        contributionGrowth: g.contributionGrowth,
+        annualSpend: g.annualSpend,
+        realReturn: g.realReturn,
+        withdrawalRate: g.withdrawalRate,
+      };
+      $('#scenarioModalTitle').textContent = 'New scenario';
+    }
+    $('#sName').value = s.name;
+    $('#sSpend').value = s.annualSpend;
+    $('#sContribution').value = s.annualContribution;
+    $('#sGrowth').value = (s.contributionGrowth * 100).toFixed(1);
+    $('#sGrowthLabel').textContent = (s.contributionGrowth * 100).toFixed(1) + '%';
+    $('#sReturn').value = (s.realReturn * 100).toFixed(2);
+    $('#sReturnLabel').textContent = (s.realReturn * 100).toFixed(1) + '%';
+    $('#sPortfolio').value = s.portfolio;
+    $('#sWR').value = (s.withdrawalRate * 100).toFixed(1);
+    $('#sWRLabel').textContent = (s.withdrawalRate * 100).toFixed(1) + '%';
+    modal.classList.add('open');
+  }
+  function closeScenarioModal() { modal.classList.remove('open'); editingScenarioId = null; }
+  function saveScenarioFromModal() {
+    const payload = {
+      name: $('#sName').value.trim() || 'Untitled',
+      portfolio: +$('#sPortfolio').value || 0,
+      annualContribution: +$('#sContribution').value || 0,
+      contributionGrowth: (+$('#sGrowth').value || 0) / 100,
+      annualSpend: +$('#sSpend').value || 0,
+      realReturn: (+$('#sReturn').value || 0) / 100,
+      withdrawalRate: (+$('#sWR').value || 0) / 100,
+    };
+    if (editingScenarioId) {
+      const s = state.scenarios.find(x => x.id === editingScenarioId);
+      Object.assign(s, payload);
+    } else {
+      const color = SCENARIO_COLORS[state.scenarios.length % SCENARIO_COLORS.length];
+      state.scenarios.push({ id: cryptoId(), color, visible: true, ...payload });
+    }
+    saveState(); renderScenarios();
+    closeScenarioModal();
+    toast('Scenario saved');
+  }
+
+  // ============================================================
+  // EXPORT / IMPORT / RESET
+  // ============================================================
+
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `ember-fire-plan-${stamp}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Exported');
+  }
+
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (!parsed.global || !parsed.scenarios) throw new Error('Invalid format');
+        if (!confirm('Replace your current plan with the imported file?')) return;
+        state = migrateState(parsed); saveState(); renderAll(); toast('Imported');
+      } catch (err) {
+        alert('Could not read that file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function resetAll() {
+    if (!confirm('Reset everything to defaults? This clears your scenarios.')) return;
+    state = freshState(); saveState(); renderAll(); toast('Reset');
+  }
+
+  // ============================================================
+  // RENDER ALL + EVENT WIRING + BOOT
+  // ============================================================
+
+  function renderAll() {
+    syncInputsFromState();
+    const g = state.global;
+    $('#portfolioTotalChip').textContent = 'Total: ' + fmt.moneyFull(totalPortfolio(g));
+    $('#contributionTotalChip').textContent = 'Total: ' + fmt.moneyFull(totalContribution(g)) + ' / yr';
+    $('#grossSpendDisplay').textContent = fmt.moneyFull(grossUpForTax(g.annualSpend, g.retirementTaxRate));
+    renderClassificationAndVariants();
+    renderScenarios();
+    renderBarista();
+    renderCoast();
+  }
+
+  function recompute() {
+    readGlobalsFromInputs();
+    saveState();
+    renderClassificationAndVariants();
+    renderScenarios();
+    renderBarista();
+    renderCoast();
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function bindEvents() {
+    const inputs = [
+      'currentAge','retirementAge','lifeExpectancy','household',
+      'balCash','balTaxable','balTraditional','balRoth','balHSA',
+      'conCash','conTaxable','conTraditional','conRoth','conHSA',
+      'contributionGrowth','annualSpend','retirementTaxRate','inflation',
+      'realReturn','volatility','withdrawalRate',
+      'partTimeIncome','healthcareSavings','coastRetirementAge'
+    ];
+    inputs.forEach(id => {
+      const el = $('#' + id);
+      if (!el) { console.warn('Missing input #' + id); return; }
+      el.addEventListener('input', recompute);
+      el.addEventListener('change', recompute);
+    });
+    $('#addScenarioBtn').addEventListener('click', () => openScenarioModal(null));
+    $('#scenarioModalClose').addEventListener('click', closeScenarioModal);
+    $('#scenarioModalCancel').addEventListener('click', closeScenarioModal);
+    $('#scenarioModalSave').addEventListener('click', saveScenarioFromModal);
+    $('#sGrowth').addEventListener('input', e => $('#sGrowthLabel').textContent = (+e.target.value).toFixed(1) + '%');
+    $('#sReturn').addEventListener('input', e => $('#sReturnLabel').textContent = (+e.target.value).toFixed(1) + '%');
+    $('#sWR').addEventListener('input', e => $('#sWRLabel').textContent = (+e.target.value).toFixed(1) + '%');
+    modal.addEventListener('click', e => { if (e.target === modal) closeScenarioModal(); });
+    $('#runMonteCarlo').addEventListener('click', runAndRenderMonteCarlo);
+    $('#exportBtn').addEventListener('click', exportJSON);
+    $('#importBtn').addEventListener('click', () => $('#importFile').click());
+    $('#importFile').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); });
+    $('#resetBtn').addEventListener('click', resetAll);
+    $('#mobileNavToggle').addEventListener('click', () => { $('#mobileMenu').classList.toggle('open'); });
+    $$('#mobileMenu a').forEach(a => a.addEventListener('click', () => $('#mobileMenu').classList.remove('open')));
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    renderAll();
+    renderMonteCarloPlaceholder();
+  });
+  </script>
+</body>
+</html>
