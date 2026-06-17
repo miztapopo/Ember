@@ -591,10 +591,11 @@
                 <thead>
                   <tr>
                     <th>Scenario</th>
+                    <th class="num">Retire</th>
                     <th class="num">FIRE #</th>
-                    <th class="num">Years</th>
-                    <th class="num">FIRE Age</th>
-                    <th class="num">Coast #</th>
+                    <th class="num">Peak NW</th>
+                    <th class="num">End NW</th>
+                    <th class="num">Funds last to</th>
                   </tr>
                 </thead>
                 <tbody id="scenarioTableBody"></tbody>
@@ -768,58 +769,100 @@
 
   <!-- Add/edit scenario modal -->
   <div id="scenarioModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="flex items-center justify-between mb-4">
+    <div class="modal" style="max-width: 760px;">
+      <div class="flex items-center justify-between mb-2">
         <h3 id="scenarioModalTitle" class="display-3">New scenario</h3>
         <button id="scenarioModalClose" class="text-2xl text-[var(--ink-mute)] hover:text-[var(--ink)]">×</button>
       </div>
-      <div class="grid grid-cols-1 gap-4">
+      <p class="text-sm text-[var(--ink-soft)] mb-5">Every field below is per-scenario. The chart shows accumulation through your retirement age, then subtracts your gross annual spend each year.</p>
+
+      <div class="grid grid-cols-1 gap-5">
         <div>
           <label class="input-label" for="sName">Scenario name</label>
           <input id="sName" type="text" class="input" placeholder="e.g. Move to Austin" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="input-label" for="sSpend">Annual spend</label>
-            <div class="input-prefix" data-prefix="$">
-              <input id="sSpend" type="number" class="input" step="1000" />
+
+        <!-- Timing -->
+        <div>
+          <p class="text-xs font-semibold text-[var(--ink-mute)] uppercase tracking-wider mb-2">Timing</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="input-label" for="sRetirementAge">Retirement age</label>
+              <input id="sRetirementAge" type="number" class="input" min="20" max="80" />
+            </div>
+            <div>
+              <label class="input-label" for="sLifeExpectancy">Plan through age</label>
+              <input id="sLifeExpectancy" type="number" class="input" min="65" max="105" />
             </div>
           </div>
-          <div>
-            <label class="input-label" for="sContribution">Annual savings</label>
-            <div class="input-prefix" data-prefix="$">
-              <input id="sContribution" type="number" class="input" step="500" />
-            </div>
+        </div>
+
+        <!-- Account balances -->
+        <div>
+          <p class="text-xs font-semibold text-[var(--ink-mute)] uppercase tracking-wider mb-2">Account balances today</p>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div><label class="input-label" for="sBalCash">Cash</label><div class="input-prefix" data-prefix="$"><input id="sBalCash" type="number" class="input" step="1000" /></div></div>
+            <div><label class="input-label" for="sBalTaxable">Taxable</label><div class="input-prefix" data-prefix="$"><input id="sBalTaxable" type="number" class="input" step="1000" /></div></div>
+            <div><label class="input-label" for="sBalTraditional">Tax-deferred</label><div class="input-prefix" data-prefix="$"><input id="sBalTraditional" type="number" class="input" step="1000" /></div></div>
+            <div><label class="input-label" for="sBalRoth">Roth</label><div class="input-prefix" data-prefix="$"><input id="sBalRoth" type="number" class="input" step="1000" /></div></div>
+            <div><label class="input-label" for="sBalHSA">HSA</label><div class="input-prefix" data-prefix="$"><input id="sBalHSA" type="number" class="input" step="500" /></div></div>
           </div>
-          <div>
-            <label class="input-label" for="sGrowth">Savings increase /yr</label>
-            <div class="flex items-center gap-3">
+        </div>
+
+        <!-- Contributions -->
+        <div>
+          <p class="text-xs font-semibold text-[var(--ink-mute)] uppercase tracking-wider mb-2">Annual contributions</p>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div><label class="input-label" for="sConCash">Cash</label><div class="input-prefix" data-prefix="$"><input id="sConCash" type="number" class="input" step="500" /></div></div>
+            <div><label class="input-label" for="sConTaxable">Taxable</label><div class="input-prefix" data-prefix="$"><input id="sConTaxable" type="number" class="input" step="500" /></div></div>
+            <div><label class="input-label" for="sConTraditional">Tax-deferred</label><div class="input-prefix" data-prefix="$"><input id="sConTraditional" type="number" class="input" step="500" /></div></div>
+            <div><label class="input-label" for="sConRoth">Roth</label><div class="input-prefix" data-prefix="$"><input id="sConRoth" type="number" class="input" step="500" /></div></div>
+            <div><label class="input-label" for="sConHSA">HSA</label><div class="input-prefix" data-prefix="$"><input id="sConHSA" type="number" class="input" step="500" /></div></div>
+          </div>
+          <div class="mt-3">
+            <label class="input-label" for="sGrowth">Yearly contribution increase</label>
+            <div class="flex items-center gap-3 max-w-xs">
               <input id="sGrowth" type="range" min="0" max="10" step="0.5" />
               <span id="sGrowthLabel" class="text-sm font-medium w-12 text-right"></span>
             </div>
           </div>
-          <div>
-            <label class="input-label" for="sReturn">Expected real return</label>
-            <div class="flex items-center gap-3">
-              <input id="sReturn" type="range" min="2" max="10" step="0.25" />
-              <span id="sReturnLabel" class="text-sm font-medium w-14 text-right"></span>
+        </div>
+
+        <!-- Spending -->
+        <div>
+          <p class="text-xs font-semibold text-[var(--ink-mute)] uppercase tracking-wider mb-2">Retirement spending</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="input-label" for="sSpend">Annual take-home spend</label>
+              <div class="input-prefix" data-prefix="$"><input id="sSpend" type="number" class="input" step="1000" /></div>
+            </div>
+            <div>
+              <label class="input-label" for="sTaxRate">Effective tax rate</label>
+              <div class="flex items-center gap-3"><input id="sTaxRate" type="range" min="0" max="35" step="0.5" /><span id="sTaxRateLabel" class="text-sm font-medium w-14 text-right"></span></div>
+            </div>
+            <div>
+              <label class="input-label">Gross withdrawal need</label>
+              <p id="sGrossDisplay" class="text-lg font-semibold mt-1">$0</p>
             </div>
           </div>
-          <div>
-            <label class="input-label" for="sPortfolio">Starting portfolio</label>
-            <div class="input-prefix" data-prefix="$">
-              <input id="sPortfolio" type="number" class="input" step="1000" />
+        </div>
+
+        <!-- Assumptions -->
+        <div>
+          <p class="text-xs font-semibold text-[var(--ink-mute)] uppercase tracking-wider mb-2">Assumptions</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="input-label" for="sReturn">Expected real return</label>
+              <div class="flex items-center gap-3"><input id="sReturn" type="range" min="2" max="10" step="0.25" /><span id="sReturnLabel" class="text-sm font-medium w-14 text-right"></span></div>
             </div>
-          </div>
-          <div>
-            <label class="input-label" for="sWR">Withdrawal rate</label>
-            <div class="flex items-center gap-3">
-              <input id="sWR" type="range" min="2.5" max="5" step="0.1" />
-              <span id="sWRLabel" class="text-sm font-medium w-14 text-right"></span>
+            <div>
+              <label class="input-label" for="sWR">Withdrawal rate</label>
+              <div class="flex items-center gap-3"><input id="sWR" type="range" min="2.5" max="5" step="0.1" /><span id="sWRLabel" class="text-sm font-medium w-14 text-right"></span></div>
             </div>
           </div>
         </div>
       </div>
+
       <div class="flex gap-2 justify-end mt-6">
         <button id="scenarioModalCancel" class="btn btn-light">Cancel</button>
         <button id="scenarioModalSave" class="btn btn-dark">Save scenario</button>
@@ -884,21 +927,40 @@
     { key: 'fat',     name: 'Fat FIRE',     range: [200000, 400000], midSpend: 300000, blurb: 'Premium, luxury lifestyle.', emoji: '💎' },
   ];
 
-  // Year-by-year accumulation projection
-  // Returns { years: [...], values: [...] }
-  function project(scenario, maxYears = 70) {
+  // Year-by-year net worth projection covering BOTH accumulation and drawdown.
+  // Accumulation runs from currentAge until scenario.retirementAge (exclusive),
+  // then drawdown begins: portfolio compounds at realReturn and the gross spend
+  // is subtracted each year until lifeExpectancy (or until depleted).
+  // Returns { years: [...], values: [...] } in today's (real) dollars.
+  function project(scenario, fallbackYears = 70) {
+    const currentAge = scenario.currentAge;
+    const retireAge = (scenario.retirementAge != null) ? scenario.retirementAge : currentAge + fallbackYears;
+    const endAge = scenario.lifeExpectancy || (currentAge + fallbackYears);
+    const totalYears = Math.max(1, endAge - currentAge);
+    const retireIdx = Math.max(0, retireAge - currentAge);
+
+    const r = scenario.realReturn;
+    const inc = scenario.contributionGrowth || 0;
+    const c0 = scenario.annualContribution || 0;
+    const taxRate = (scenario.retirementTaxRate != null) ? scenario.retirementTaxRate : 0;
+    const grossSpend = grossUpForTax(scenario.annualSpend || 0, taxRate);
+
     const years = [];
     const values = [];
     let p = scenario.portfolio;
-    const r = scenario.realReturn;
-    const inc = scenario.contributionGrowth || 0;
-    const c0 = scenario.annualContribution;
 
-    for (let i = 0; i <= maxYears; i++) {
-      years.push(scenario.currentAge + i);
-      values.push(p);
-      const c = c0 * Math.pow(1 + inc, i);
-      p = p * (1 + r) + c;
+    for (let i = 0; i <= totalYears; i++) {
+      years.push(currentAge + i);
+      values.push(Math.max(0, p));
+      if (i < retireIdx) {
+        // Accumulation phase
+        const c = c0 * Math.pow(1 + inc, i);
+        p = p * (1 + r) + c;
+      } else {
+        // Drawdown phase: compound, then subtract real-dollar gross spend
+        p = p * (1 + r) - grossSpend;
+        if (p < 0) p = 0;
+      }
     }
     return { years, values };
   }
@@ -1100,62 +1162,78 @@
       if (g[k] == null) g[k] = DEFAULT_GLOBAL[k];
     }
     s.global = g;
-    // Ensure each scenario has portfolio/annualContribution
-    s.scenarios = (s.scenarios || []).map(sc => ({
-      portfolio: sc.portfolio ?? totalPortfolio(g),
-      annualContribution: sc.annualContribution ?? totalContribution(g),
-      contributionGrowth: sc.contributionGrowth ?? g.contributionGrowth,
-      annualSpend: sc.annualSpend ?? g.annualSpend,
-      realReturn: sc.realReturn ?? g.realReturn,
-      withdrawalRate: sc.withdrawalRate ?? g.withdrawalRate,
-      ...sc,
-    }));
+    // Ensure each scenario has every field needed by the v2 modal + projection
+    s.scenarios = (s.scenarios || []).map(sc => {
+      const merged = {
+        // sane defaults from global
+        retirementAge: g.retirementAge,
+        lifeExpectancy: g.lifeExpectancy,
+        balCash: g.balCash, balTaxable: g.balTaxable, balTraditional: g.balTraditional, balRoth: g.balRoth, balHSA: g.balHSA,
+        conCash: g.conCash, conTaxable: g.conTaxable, conTraditional: g.conTraditional, conRoth: g.conRoth, conHSA: g.conHSA,
+        contributionGrowth: g.contributionGrowth,
+        annualSpend: g.annualSpend,
+        retirementTaxRate: g.retirementTaxRate,
+        realReturn: g.realReturn,
+        withdrawalRate: g.withdrawalRate,
+        // existing scenario values win
+        ...sc,
+      };
+      // Backfill totals — if the scenario didn't have bucket-level info, distribute its
+      // legacy single `portfolio` / `annualContribution` totals into Taxable as a default.
+      if (sc.portfolio != null && sc.balTaxable == null) {
+        merged.balCash = 0; merged.balTraditional = 0; merged.balRoth = 0; merged.balHSA = 0;
+        merged.balTaxable = sc.portfolio;
+      }
+      if (sc.annualContribution != null && sc.conTaxable == null) {
+        merged.conCash = 0; merged.conTraditional = 0; merged.conRoth = 0; merged.conHSA = 0;
+        merged.conTaxable = sc.annualContribution;
+      }
+      merged.portfolio = (merged.balCash||0) + (merged.balTaxable||0) + (merged.balTraditional||0) + (merged.balRoth||0) + (merged.balHSA||0);
+      merged.annualContribution = (merged.conCash||0) + (merged.conTaxable||0) + (merged.conTraditional||0) + (merged.conRoth||0) + (merged.conHSA||0);
+      return merged;
+    });
     return s;
+  }
+
+  function makeScenarioFromGlobal(g, overrides = {}) {
+    return {
+      id: cryptoId(),
+      name: 'Untitled',
+      color: SCENARIO_COLORS[0],
+      visible: true,
+      retirementAge: g.retirementAge,
+      lifeExpectancy: g.lifeExpectancy,
+      balCash: g.balCash, balTaxable: g.balTaxable, balTraditional: g.balTraditional, balRoth: g.balRoth, balHSA: g.balHSA,
+      conCash: g.conCash, conTaxable: g.conTaxable, conTraditional: g.conTraditional, conRoth: g.conRoth, conHSA: g.conHSA,
+      contributionGrowth: g.contributionGrowth,
+      annualSpend: g.annualSpend,
+      retirementTaxRate: g.retirementTaxRate,
+      realReturn: g.realReturn,
+      withdrawalRate: g.withdrawalRate,
+      // Derived totals kept in sync at save time for the projection function
+      portfolio: totalPortfolio(g),
+      annualContribution: totalContribution(g),
+      ...overrides,
+    };
   }
 
   function freshState() {
     const g = { ...DEFAULT_GLOBAL };
-    const totalP = totalPortfolio(g);
-    const totalC = totalContribution(g);
     return {
       global: g,
       scenarios: [
-        {
-          id: cryptoId(),
-          name: 'Baseline',
-          color: SCENARIO_COLORS[0],
-          visible: true,
-          portfolio: totalP,
-          annualContribution: totalC,
-          contributionGrowth: g.contributionGrowth,
-          annualSpend: g.annualSpend,
-          realReturn: g.realReturn,
-          withdrawalRate: g.withdrawalRate,
-        },
-        {
-          id: cryptoId(),
-          name: 'Aggressive Saver (+$1k/mo)',
+        makeScenarioFromGlobal(g, { name: 'Baseline', color: SCENARIO_COLORS[0] }),
+        makeScenarioFromGlobal(g, {
+          name: 'Retire 5 yrs later',
           color: SCENARIO_COLORS[1],
-          visible: true,
-          portfolio: totalP,
-          annualContribution: totalC + 12000,
-          contributionGrowth: g.contributionGrowth,
-          annualSpend: g.annualSpend,
-          realReturn: g.realReturn,
-          withdrawalRate: g.withdrawalRate,
-        },
-        {
-          id: cryptoId(),
-          name: 'Lean Lifestyle',
+          retirementAge: g.retirementAge + 5,
+        }),
+        makeScenarioFromGlobal(g, {
+          name: 'Aggressive Saver (+$1k/mo to taxable)',
           color: SCENARIO_COLORS[2],
-          visible: true,
-          portfolio: totalP,
-          annualContribution: totalC,
-          contributionGrowth: g.contributionGrowth,
-          annualSpend: 50000,
-          realReturn: g.realReturn,
-          withdrawalRate: g.withdrawalRate,
-        },
+          conTaxable: g.conTaxable + 12000,
+          annualContribution: totalContribution(g) + 12000,
+        }),
       ],
     };
   }
@@ -1282,12 +1360,17 @@
     // Keep the baseline scenario in sync with globals for convenience
     const baseline = state.scenarios[0];
     if (baseline && baseline.name === 'Baseline') {
-      baseline.portfolio = totalPortfolio(g);
-      baseline.annualContribution = totalContribution(g);
+      baseline.retirementAge = g.retirementAge;
+      baseline.lifeExpectancy = g.lifeExpectancy;
+      baseline.balCash = g.balCash; baseline.balTaxable = g.balTaxable; baseline.balTraditional = g.balTraditional; baseline.balRoth = g.balRoth; baseline.balHSA = g.balHSA;
+      baseline.conCash = g.conCash; baseline.conTaxable = g.conTaxable; baseline.conTraditional = g.conTraditional; baseline.conRoth = g.conRoth; baseline.conHSA = g.conHSA;
       baseline.contributionGrowth = g.contributionGrowth;
       baseline.annualSpend = g.annualSpend;
+      baseline.retirementTaxRate = g.retirementTaxRate;
       baseline.realReturn = g.realReturn;
       baseline.withdrawalRate = g.withdrawalRate;
+      baseline.portfolio = totalPortfolio(g);
+      baseline.annualContribution = totalContribution(g);
     }
   }
 
@@ -1503,7 +1586,7 @@
         <span class="swatch" style="background:${s.color}"></span>
         <div class="flex-1 min-w-0">
           <p class="font-medium text-sm truncate">${escapeHtml(s.name)}</p>
-          <p class="text-xs text-[var(--ink-mute)] truncate">${fmt.money(s.annualContribution)}/yr &middot; ${fmt.money(s.annualSpend)} spend &middot; ${(s.realReturn*100).toFixed(1)}%</p>
+          <p class="text-xs text-[var(--ink-mute)] truncate">retire @ ${s.retirementAge} &middot; ${fmt.money(s.annualContribution)}/yr saved &middot; ${fmt.money(s.annualSpend)} spend &middot; ${(s.realReturn*100).toFixed(1)}% return</p>
         </div>
         <button class="text-xs text-[var(--ink-mute)] hover:text-[var(--ink)] scenario-edit" data-id="${s.id}">Edit</button>
         ${state.scenarios.length > 1 ? `<button class="text-xs text-[var(--ink-mute)] hover:text-[var(--danger)] scenario-delete" data-id="${s.id}">&times;</button>` : ''}
@@ -1533,13 +1616,15 @@
 
   function renderScenarioChart() {
     const g = state.global;
-    const yearsHorizon = Math.max(20, g.lifeExpectancy - g.currentAge);
     const visible = state.scenarios.filter(s => s.visible);
+    // Chart extends to the max life expectancy across visible scenarios so drawdown is visible
+    const horizonEnd = Math.max(g.lifeExpectancy, ...visible.map(s => s.lifeExpectancy || g.lifeExpectancy));
+    const yearsHorizon = Math.max(20, horizonEnd - g.currentAge);
     const datasets = visible.map(s => {
       const sc = { ...s, currentAge: g.currentAge };
       const p = project(sc, yearsHorizon);
       return {
-        label: s.name,
+        label: `${s.name} (retire @ ${s.retirementAge})`,
         data: p.values.map((v, i) => ({ x: p.years[i], y: v })),
         borderColor: s.color,
         backgroundColor: s.color + '15',
@@ -1593,18 +1678,35 @@
     const tbody = $('#scenarioTableBody');
     tbody.innerHTML = '';
     state.scenarios.forEach(s => {
-      const grossSpend = grossUpForTax(s.annualSpend, g.retirementTaxRate);
+      const taxRate = (s.retirementTaxRate != null) ? s.retirementTaxRate : g.retirementTaxRate;
+      const grossSpend = grossUpForTax(s.annualSpend, taxRate);
       const target = fireNumber(grossSpend, s.withdrawalRate);
       const sc = { ...s, currentAge: g.currentAge };
-      const ytt = yearsToTarget(sc, target);
-      const coast = coastFIRENumber(target, g.currentAge, g.retirementAge, s.realReturn);
+      const proj = project(sc, (s.lifeExpectancy || g.lifeExpectancy) - g.currentAge);
+
+      // Peak net worth (max in projection)
+      let peakValue = 0, peakAge = sc.currentAge;
+      for (let i = 0; i < proj.values.length; i++) {
+        if (proj.values[i] > peakValue) { peakValue = proj.values[i]; peakAge = proj.years[i]; }
+      }
+      const endValue = proj.values[proj.values.length - 1];
+
+      // Find depletion age (first age where value hits 0 after retirement)
+      let depletionAge = null;
+      for (let i = 0; i < proj.values.length; i++) {
+        if (proj.years[i] >= sc.retirementAge && proj.values[i] <= 0) { depletionAge = proj.years[i]; break; }
+      }
+      const lastsTo = depletionAge ? `${depletionAge}` : `${proj.years[proj.years.length - 1]}+`;
+      const lastsColor = depletionAge ? 'color: var(--danger);' : 'color: var(--positive);';
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><span class="swatch align-middle mr-2" style="background:${s.color}"></span><span class="${s.visible ? '' : 'opacity-50'}">${escapeHtml(s.name)}</span></td>
+        <td class="num">${s.retirementAge}</td>
         <td class="num">${fmt.money(target)}</td>
-        <td class="num">${ytt == null ? '50+' : ytt}</td>
-        <td class="num">${ytt == null ? '&mdash;' : g.currentAge + ytt}</td>
-        <td class="num">${fmt.money(coast)}</td>
+        <td class="num">${fmt.money(peakValue)} <span class="text-xs text-[var(--ink-mute)]">@ ${peakAge}</span></td>
+        <td class="num">${fmt.money(endValue)}</td>
+        <td class="num" style="${lastsColor}">age ${lastsTo}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1749,6 +1851,12 @@
   let editingScenarioId = null;
   const modal = $('#scenarioModal');
 
+  function updateScenarioModalGross() {
+    const spend = +$('#sSpend').value || 0;
+    const tax = (+$('#sTaxRate').value || 0) / 100;
+    $('#sGrossDisplay').textContent = fmt.moneyFull(grossUpForTax(spend, tax));
+  }
+
   function openScenarioModal(id) {
     editingScenarioId = id;
     let s;
@@ -1756,38 +1864,64 @@
       s = state.scenarios.find(x => x.id === id);
       $('#scenarioModalTitle').textContent = 'Edit scenario';
     } else {
-      const g = state.global;
-      s = {
-        name: 'New scenario',
-        portfolio: totalPortfolio(g),
-        annualContribution: totalContribution(g),
-        contributionGrowth: g.contributionGrowth,
-        annualSpend: g.annualSpend,
-        realReturn: g.realReturn,
-        withdrawalRate: g.withdrawalRate,
-      };
+      s = makeScenarioFromGlobal(state.global, { name: 'New scenario' });
       $('#scenarioModalTitle').textContent = 'New scenario';
     }
     $('#sName').value = s.name;
-    $('#sSpend').value = s.annualSpend;
-    $('#sContribution').value = s.annualContribution;
+    $('#sRetirementAge').value = s.retirementAge;
+    $('#sLifeExpectancy').value = s.lifeExpectancy;
+
+    $('#sBalCash').value = s.balCash || 0;
+    $('#sBalTaxable').value = s.balTaxable || 0;
+    $('#sBalTraditional').value = s.balTraditional || 0;
+    $('#sBalRoth').value = s.balRoth || 0;
+    $('#sBalHSA').value = s.balHSA || 0;
+
+    $('#sConCash').value = s.conCash || 0;
+    $('#sConTaxable').value = s.conTaxable || 0;
+    $('#sConTraditional').value = s.conTraditional || 0;
+    $('#sConRoth').value = s.conRoth || 0;
+    $('#sConHSA').value = s.conHSA || 0;
+
     $('#sGrowth').value = (s.contributionGrowth * 100).toFixed(1);
     $('#sGrowthLabel').textContent = (s.contributionGrowth * 100).toFixed(1) + '%';
+
+    $('#sSpend').value = s.annualSpend;
+    $('#sTaxRate').value = (s.retirementTaxRate * 100).toFixed(1);
+    $('#sTaxRateLabel').textContent = (s.retirementTaxRate * 100).toFixed(1) + '%';
+
     $('#sReturn').value = (s.realReturn * 100).toFixed(2);
     $('#sReturnLabel').textContent = (s.realReturn * 100).toFixed(1) + '%';
-    $('#sPortfolio').value = s.portfolio;
     $('#sWR').value = (s.withdrawalRate * 100).toFixed(1);
     $('#sWRLabel').textContent = (s.withdrawalRate * 100).toFixed(1) + '%';
+
+    updateScenarioModalGross();
     modal.classList.add('open');
   }
   function closeScenarioModal() { modal.classList.remove('open'); editingScenarioId = null; }
   function saveScenarioFromModal() {
+    const balCash = +$('#sBalCash').value || 0;
+    const balTaxable = +$('#sBalTaxable').value || 0;
+    const balTraditional = +$('#sBalTraditional').value || 0;
+    const balRoth = +$('#sBalRoth').value || 0;
+    const balHSA = +$('#sBalHSA').value || 0;
+    const conCash = +$('#sConCash').value || 0;
+    const conTaxable = +$('#sConTaxable').value || 0;
+    const conTraditional = +$('#sConTraditional').value || 0;
+    const conRoth = +$('#sConRoth').value || 0;
+    const conHSA = +$('#sConHSA').value || 0;
+
     const payload = {
       name: $('#sName').value.trim() || 'Untitled',
-      portfolio: +$('#sPortfolio').value || 0,
-      annualContribution: +$('#sContribution').value || 0,
+      retirementAge: +$('#sRetirementAge').value || state.global.retirementAge,
+      lifeExpectancy: +$('#sLifeExpectancy').value || state.global.lifeExpectancy,
+      balCash, balTaxable, balTraditional, balRoth, balHSA,
+      conCash, conTaxable, conTraditional, conRoth, conHSA,
+      portfolio: balCash + balTaxable + balTraditional + balRoth + balHSA,
+      annualContribution: conCash + conTaxable + conTraditional + conRoth + conHSA,
       contributionGrowth: (+$('#sGrowth').value || 0) / 100,
       annualSpend: +$('#sSpend').value || 0,
+      retirementTaxRate: (+$('#sTaxRate').value || 0) / 100,
       realReturn: (+$('#sReturn').value || 0) / 100,
       withdrawalRate: (+$('#sWR').value || 0) / 100,
     };
@@ -1889,6 +2023,11 @@
     $('#sGrowth').addEventListener('input', e => $('#sGrowthLabel').textContent = (+e.target.value).toFixed(1) + '%');
     $('#sReturn').addEventListener('input', e => $('#sReturnLabel').textContent = (+e.target.value).toFixed(1) + '%');
     $('#sWR').addEventListener('input', e => $('#sWRLabel').textContent = (+e.target.value).toFixed(1) + '%');
+    $('#sTaxRate').addEventListener('input', e => {
+      $('#sTaxRateLabel').textContent = (+e.target.value).toFixed(1) + '%';
+      updateScenarioModalGross();
+    });
+    $('#sSpend').addEventListener('input', updateScenarioModalGross);
     modal.addEventListener('click', e => { if (e.target === modal) closeScenarioModal(); });
     $('#runMonteCarlo').addEventListener('click', runAndRenderMonteCarlo);
     $('#exportBtn').addEventListener('click', exportJSON);
